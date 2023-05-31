@@ -1,13 +1,17 @@
 <template>
-  <span class="text-center">
-    <span v-if="!inConfirmation">
+  <div
+    :class="{ 'text-center': inConfirmation }"
+    class="d-inline-block"
+  >
+    <template v-if="!inConfirmation">
       <b-button
         data-test-id="button-delete"
         :variant="variant"
         :size="size"
         :disabled="disabled"
+        :title="tooltip"
         :class="`${buttonClass} ${borderless ? 'border-0' : ''}`"
-        @click.prevent="onPrompt"
+        @click.stop.prevent="onPrompt"
       >
         <slot>
           <font-awesome-icon
@@ -16,8 +20,8 @@
         </slot>
       </b-button>
 
-    </span>
-    <span v-else>
+    </template>
+    <template v-else>
       <b-button
         data-test-id="button-delete-confirm"
         :variant="variantOk"
@@ -26,7 +30,7 @@
         class="mr-1"
         :class="[ borderless && 'border-0' ]"
         @blur.prevent="onCancel()"
-        @click.prevent="onConfirmation()"
+        @click.prevent.stop="onConfirmation()"
       >
         <slot name="yes">
           <font-awesome-icon
@@ -40,15 +44,15 @@
         :size="sizeConfirm"
         :disabled="cancelDisabled"
         :class="[ borderless && 'border-0' ]"
-        @click.prevent="onCancel()"
+        @click.prevent.stop="onCancel()"
       >
         <slot name="no">
           <font-awesome-icon
             :icon="['fas', 'times']"
           /></slot>
       </b-button>
-    </span>
-  </span>
+    </template>
+  </div>
 </template>
 <script lang="js">
 export default {
@@ -85,6 +89,10 @@ export default {
     sizeConfirm: {
       type: String,
       default: 'sm',
+    },
+    tooltip: {
+      type: String,
+      default: '',
     },
   },
 

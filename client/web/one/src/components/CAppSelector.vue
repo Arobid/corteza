@@ -30,9 +30,9 @@
         <draggable
           v-if="filteredApps.length"
           v-model="appList"
+          :disabled="!canCreateApplication || query || isMobileResolution"
           group="apps"
           class="h-100 w-100"
-          :disabled="!canCreateApplication || query || isMobileResolution"
           @end="onDrop"
         >
           <transition-group
@@ -78,6 +78,7 @@
                   :data-test-id="app.name"
                   :disabled="!app.enabled"
                   :href="app.unify.url"
+                  :target="openAppInNewTab(app.unify.url)"
                   :style="[{ cursor: `${app.enabled ? 'pointer': canCreateApplication ? 'grab' : 'default'}` }]"
                   class="stretched-link"
                 />
@@ -274,6 +275,10 @@ export default {
 
       // Provisioned app logos
       return app.unify.logo
+    },
+
+    openAppInNewTab (route) {
+      return !route.includes('jitsi') ? '' : '_blank'
     },
   },
 }

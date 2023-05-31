@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/cortezaproject/corteza/server/pkg/actionlog"
-	"github.com/spf13/cast"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cortezaproject/corteza/server/pkg/actionlog"
+	"github.com/spf13/cast"
 
 	"github.com/cortezaproject/corteza/server/pkg/errors"
 	"github.com/cortezaproject/corteza/server/pkg/logger"
@@ -251,7 +252,7 @@ func (svc *settings) logChange(ctx context.Context, vv types.SettingValueSet) {
 	for _, v := range vv {
 		svc.log(ctx,
 			zap.String("name", v.Name),
-			zap.Uint64("owned-by", v.OwnedBy),
+			logger.Uint64("owned-by", v.OwnedBy),
 			zap.Stringer("value", v.Value)).
 			WithOptions(zap.AddCallerSkip(1)).
 			Debug("setting value updated")
@@ -279,7 +280,7 @@ func (svc *settings) Delete(ctx context.Context, name string, ownedBy uint64) er
 
 	svc.log(ctx,
 		zap.String("name", name),
-		zap.Uint64("owned-by", ownedBy)).Info("setting value removed")
+		logger.Uint64("owned-by", ownedBy)).Info("setting value removed")
 
 	return svc.updateCurrent(ctx, vv)
 }

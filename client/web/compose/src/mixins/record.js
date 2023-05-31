@@ -10,6 +10,7 @@ export default {
       inEditing: false,
       processing: false,
       processingDelete: false,
+      processingUndelete: false,
       processingSubmit: false,
       record: undefined,
       errors: new validator.Validated(),
@@ -35,13 +36,10 @@ export default {
 
     /**
      * Tells if given record is deleted; If record not provided, returns undefined
-     * @returns {Boolean|undefined}
+     * @returns {Boolean}
      */
     isDeleted () {
-      if (!this.record) {
-        return
-      }
-      return !!this.record.deletedAt
+      return this.record && this.record.deletedAt
     },
   },
 
@@ -82,7 +80,8 @@ export default {
       this.page.blocks.forEach((b, index) => {
         if (b.kind === 'RecordList' && b.options.editable) {
           const p = new Promise((resolve) => {
-            this.$root.$emit(`record-line:collect:${this.page.pageID}-${(this.record || {}).recordID || '0'}-${index}`, resolve)
+            const recordListUniqueID = [this.page.pageID, (this.record || {}).recordID || NoID, b.blockID].map(v => v || NoID).join('-')
+            this.$root.$emit(`record-line:collect:${recordListUniqueID}`, resolve)
           })
 
           queue.push(p)
@@ -238,9 +237,73 @@ export default {
         })
         .then(() => this.dispatchUiEvent('afterDelete'))
         .then(() => this.updatePrompts())
+        .then(this.loadRecord)
         .catch(this.toastErrorHandler(this.$t('notification:record.deleteFailed')))
         .finally(() => {
           this.processingDelete = false
+          this.processing = false
+        })
+    }, 500),
+
+    handleUndelete: throttle(function () {
+      this.processingUndelete = true
+      this.processing = true
+
+      return this
+        .dispatchUiEvent('beforeUndelete')
+        .then(() => this.$ComposeAPI.recordUndelete(this.record))
+        .then(() => this.dispatchUiEvent('afterUndelete'))
+        .then(() => this.updatePrompts())
+        .then(this.loadRecord)
+        .catch(this.toastErrorHandler(this.$t('notification:record.undeleteFailed')))
+        .finally(() => {
+          this.processingUndelete = false
+          this.processing = false
+        })
+    }, 500),
+
+    handleBulkUpdateSelectedRecords: throttle(function (records) {
+      this.processing = true
+
+      const values = []
+      this.fields.forEach(f => {
+        const { name, isMulti } = this.getField(f)
+        const value = this.record.values[name] || this.record[name]
+
+        if (!isMulti) {
+          values.push({ name, value: value ? value.toString() : value })
+        } else {
+          value.forEach(v => {
+            values.push({ name, value: v ? v.toString() : v })
+          })
+        }
+      })
+
+      const { moduleID, namespaceID } = this.module
+
+      return this
+        .$ComposeAPI.recordPatch({ moduleID, namespaceID, records, values })
+        .catch(err => {
+          const { details = undefined } = err
+          if (!!details && Array.isArray(details) && details.length > 0) {
+            this.errors = new validator.Validated()
+            this.errors.push(...details)
+
+            throw new Error(this.$t('notification:record.validationErrors'))
+          }
+
+          throw err
+        })
+        .then(this.updatePrompts())
+        .then(() => {
+          this.toastSuccess(this.$t('notification:record.bulkRecordUpdateSuccess'))
+          this.onModalHide()
+          this.fields = []
+          this.record = new compose.Record(this.module, {})
+          this.$emit('save')
+        })
+        .catch(this.toastErrorHandler(this.$t('notification:record.deleteBulkRecordUpdateFailed')))
+        .finally(() => {
           this.processing = false
         })
     }, 500),

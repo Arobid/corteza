@@ -21,6 +21,21 @@
     >
       {{ $t('kind.file.view.showName') }}
     </b-form-checkbox>
+
+    <b-form-checkbox
+      v-model="options.clickToView"
+      class="mb-3"
+    >
+      {{ $t('kind.file.view.clickToView') }}
+    </b-form-checkbox>
+
+    <b-form-checkbox
+      v-model="options.enableDownload"
+      class="mb-3"
+    >
+      {{ $t('kind.file.view.enableDownload') }}
+    </b-form-checkbox>
+
     <uploader
       :endpoint="endpoint"
       :max-filesize="$s('compose.Page.Attachments.MaxSize', 100)"
@@ -43,6 +58,8 @@
         {{ $t('kind.file.view.previewStyle') }}
       </h5>
 
+      <small>{{ $t('kind.file.view.description' ) }}</small>
+
       <b-row
         align-v="center"
         class="mb-2 mt-2"
@@ -53,15 +70,11 @@
         >
           <b-form-group
             :label="$t('kind.file.view.height')"
+            label-class="text-primary"
           >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
+            <b-input-group>
               <b-form-input
                 v-model="options.height"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.height')"
               />
             </b-input-group>
           </b-form-group>
@@ -73,15 +86,11 @@
         >
           <b-form-group
             :label="$t('kind.file.view.width')"
+            label-class="text-primary"
           >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
+            <b-input-group>
               <b-form-input
                 v-model="options.width"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.width')"
               />
             </b-input-group>
           </b-form-group>
@@ -93,15 +102,11 @@
         >
           <b-form-group
             :label="$t('kind.file.view.maxHeight')"
+            label-class="text-primary"
           >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
+            <b-input-group>
               <b-form-input
                 v-model="options.maxHeight"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.maxHeight')"
               />
             </b-input-group>
           </b-form-group>
@@ -113,15 +118,11 @@
         >
           <b-form-group
             :label="$t('kind.file.view.maxWidth')"
+            label-class="text-primary"
           >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
+            <b-input-group>
               <b-form-input
                 v-model="options.maxWidth"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.maxWidth')"
               />
             </b-input-group>
           </b-form-group>
@@ -133,15 +134,27 @@
         >
           <b-form-group
             :label="$t('kind.file.view.borderRadius')"
+            label-class="text-primary"
           >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
+            <b-input-group>
               <b-form-input
                 v-model="options.borderRadius"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.borderRadius')"
+              />
+            </b-input-group>
+          </b-form-group>
+        </b-col>
+
+        <b-col
+          sm="12"
+          md="6"
+        >
+          <b-form-group
+            :label="$t('kind.file.view.margin')"
+            label-class="text-primary"
+          >
+            <b-input-group>
+              <b-form-input
+                v-model="options.margin"
               />
             </b-input-group>
           </b-form-group>
@@ -153,32 +166,15 @@
         >
           <b-form-group
             :label="$t('kind.file.view.background')"
+            label-class="text-primary"
           >
-            <b-form-input
+            <c-input-color-picker
               v-model="options.backgroundColor"
-              type="color"
-              debounce="300"
+              :translations="{
+                modalTitle: $t('kind.file.view.colorPicker'),
+                saveBtnLabel: $t('general:label.saveAndClose')
+              }"
             />
-          </b-form-group>
-        </b-col>
-
-        <b-col
-          sm="12"
-          md="6"
-        >
-          <b-form-group
-            :label="$t('kind.file.view.margin')"
-          >
-            <b-input-group
-              :append="$t('kind.file.view.px')"
-            >
-              <b-form-input
-                v-model="options.margin"
-                type="number"
-                number
-                :placeholder="$t('kind.file.view.margin')"
-              />
-            </b-input-group>
           </b-form-group>
         </b-col>
       </b-row>
@@ -189,6 +185,8 @@
 import base from './base'
 import Uploader from 'corteza-webapp-compose/src/components/Public/Page/Attachment/Uploader'
 import ListLoader from 'corteza-webapp-compose/src/components/Public/Page/Attachment/ListLoader'
+import { components } from '@cortezaproject/corteza-vue'
+const { CInputColorPicker } = components
 
 export default {
   i18nOptions: {
@@ -200,6 +198,7 @@ export default {
   components: {
     Uploader,
     ListLoader,
+    CInputColorPicker,
   },
 
   extends: base,

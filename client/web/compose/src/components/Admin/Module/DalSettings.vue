@@ -10,11 +10,13 @@
       <vue-select
         v-model="module.config.dal.connectionID"
         :options="connections"
+        :get-option-key="getOptionKey"
         :disabled="processing"
         :clearable="false"
         :reduce="s => s.connectionID"
         :placeholder="$t('connection.placeholder')"
         :get-option-label="getConnectionLabel"
+        :calculate-position="calculateDropdownPosition"
         class="bg-white"
       />
     </b-form-group>
@@ -35,11 +37,12 @@
       :description="$t('module-fields.description')"
     >
       <dal-field-store-encoding
-        v-for="({ field, storeIdent, label }) in moduleFields"
+        v-for="({ field, storeIdent, label, isMulti }) in moduleFields"
         :key="field"
         :config="moduleFieldEncoding[field] || {}"
         :field="field"
         :label="label"
+        :is-multi="isMulti"
         :default-strategy="moduleFieldDefaultEncodingStrategy"
         :store-ident="storeIdent"
         @change="applyModuleFieldStrategyConfig(field, $event)"
@@ -162,6 +165,7 @@ export default {
             field: f.name,
             label: f.label || f.name,
             storeIdent: f.name,
+            isMulti: f.isMulti,
           }
 
           // In case of a JSON encoding strategy, default to values
@@ -254,6 +258,10 @@ export default {
         }
         return enc
       }, {})
+    },
+
+    getOptionKey ({ connectionID }) {
+      return connectionID
     },
   },
 }

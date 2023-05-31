@@ -7,7 +7,9 @@
         {{ $t('display-element:chart.configurator.general') }}
       </h5>
 
-      <b-row>
+      <b-row
+        align-v="stretch"
+      >
         <b-col
           cols="12"
           sm="6"
@@ -37,9 +39,7 @@
             />
           </b-form-group>
         </b-col>
-      </b-row>
 
-      <b-row>
         <b-col
           cols="12"
           sm="6"
@@ -52,12 +52,14 @@
             <vue-select
               v-model="options.colorScheme"
               :options="colorSchemes"
+              :get-option-key="getOptionKey"
               :reduce="cs => cs.value"
               :placeholder="$t('general:label.default')"
               label="label"
               option-text="label"
               option-value="value"
               clearable
+              :calculate-position="calculateDropdownPosition"
               class="mw-100"
               style="min-width: 100%;"
             >
@@ -87,6 +89,22 @@
               />
             </template>
           </b-form-group>
+        </b-col>
+
+        <b-col
+          cols="12"
+          sm="6"
+          class="d-flex flex-column justify-content-center"
+        >
+          <b-form-checkbox
+            v-model="options.noAnimation"
+            :value="false || undefined"
+            :unchecked-value="true"
+            switch
+            class="mt-3 pt-2"
+          >
+            {{ $t('display-element:chart.configurator.animation.enabled') }}
+          </b-form-checkbox>
         </b-col>
       </b-row>
       <hr>
@@ -696,6 +714,10 @@ export default {
 
     typeChanged (type) {
       this.options = reporter.ChartOptionsMaker({ ...this.options, type })
+    },
+
+    getOptionKey ({ value }) {
+      return value
     },
   },
 }

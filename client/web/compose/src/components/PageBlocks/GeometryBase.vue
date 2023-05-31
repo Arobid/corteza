@@ -9,58 +9,79 @@
     >
       <b-spinner />
     </div>
-    <template v-else>
-      <div
-        class="w-100 h-100"
-        @mouseover="disableMap"
-        @mouseleave="enableMap"
-      >
-        <l-map
-          v-if="map"
-          ref="map"
-          :zoom="map.zoom"
-          :center="map.center"
-          :min-zoom="map.zoomMin"
-          :max-zoom="map.zoomMax"
-          :bounds="map.bounds"
-          :max-bounds="map.bounds"
-          class="w-100 h-100"
-        >
-          <l-tile-layer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            :attribution="map.attribution"
-          />
-          <l-polygon
-            v-for="(geometry, i) in geometries"
-            :key="`polygon-${i}`"
-            :lat-lngs="geometry.map(value => value.geometry)"
-            :color="colors[i]"
-          />
 
-          <l-marker
-            v-for="(marker, i) in localValue"
-            :key="`marker-${i}`"
-            :lat-lng="marker.value"
-            :icon="getIcon(marker)"
-          />
-        </l-map>
-      </div>
-    </template>
+    <div
+      v-else
+      class="w-100 h-100"
+      @mouseover="disableMap"
+      @mouseleave="enableMap"
+    >
+      <l-map
+        v-if="map"
+        ref="map"
+        :zoom="map.zoom"
+        :center="map.center"
+        :min-zoom="map.zoomMin"
+        :max-zoom="map.zoomMax"
+        :bounds="map.bounds"
+        :max-bounds="map.bounds"
+        class="w-100 h-100"
+        @locationfound="onLocationFound"
+      >
+        <l-tile-layer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          :attribution="map.attribution"
+        />
+        <l-polygon
+          v-for="(geometry, i) in geometries"
+          :key="`polygon-${i}`"
+          :lat-lngs="geometry.map(value => value.geometry)"
+          :color="colors[i]"
+        />
+
+        <l-marker
+          v-for="(marker, i) in localValue"
+          :key="`marker-${i}`"
+          :lat-lng="marker.value"
+          :icon="getIcon(marker)"
+          @click="onMarkerCLick(marker.recordID, marker.moduleID)"
+        />
+        <l-control class="leaflet-bar">
+          <a
+            :title="$t('geometry.tooltip.goToCurrentLocation')"
+            role="button"
+            class="d-flex justify-content-center align-items-center"
+            @click="goToCurrentLocation"
+          >
+            <font-awesome-icon
+              :icon="['fas', 'location-arrow']"
+              class="text-primary"
+            />
+          </a>
+        </l-control>
+      </l-map>
+    </div>
   </wrap>
 </template>
 
 <script>
 import { divIcon, latLng, latLngBounds } from 'leaflet'
-import {
-  LPolygon,
-} from 'vue2-leaflet'
+import { LPolygon, LControl } from 'vue2-leaflet'
 import { compose, NoID } from '@cortezaproject/corteza-js'
 import { mapGetters, mapActions } from 'vuex'
 import { evaluatePrefilter } from 'corteza-webapp-compose/src/lib/record-filter'
+import { throttle } from 'lodash'
 import base from './base'
 
 export default {
-  components: { LPolygon },
+  i18nOptions: {
+    namespaces: 'block',
+  },
+
+  components: {
+    LPolygon,
+    LControl,
+  },
 
   extends: base,
 
@@ -80,6 +101,7 @@ export default {
   computed: {
     ...mapGetters({
       getModuleByID: 'module/getByID',
+      pages: 'page/set',
     }),
 
     localValue () {
@@ -89,7 +111,12 @@ export default {
         geo.forEach((value) => {
           if (value.displayMarker) {
             value.markers.map(subValue => {
-              values.push({ value: this.getLatLng(subValue), color: value.color })
+              values.push({
+                value: this.getLatLng(subValue),
+                color: value.color,
+                recordID: value.recordID,
+                moduleID: value.moduleID,
+              })
             })
           }
         })
@@ -106,15 +133,17 @@ export default {
         this.loadEvents()
       },
     },
+
     options: {
       deep: true,
       handler () {
         this.loadEvents()
       },
     },
-    boundingRect () {
+
+    boundingRect: throttle(function () {
       this.loadEvents()
-    },
+    }, 300),
   },
 
   created () {
@@ -149,7 +178,7 @@ export default {
         zoomMax,
       }
 
-      Promise.all(this.options.feeds.map((feed, idx) => {
+      Promise.all(this.options.feeds.filter(f => f.isValid()).map((feed, idx) => {
         return this.findModuleByID({ namespace: this.namespace, moduleID: feed.options.moduleID })
           .then(module => {
             // Interpolate prefilter variables
@@ -167,8 +196,8 @@ export default {
                 const mapModuleField = module.fields.find(f => f.name === feed.geometryField)
 
                 if (mapModuleField) {
-                  this.geometries[idx] = records.map(e => {
-                    let geometry = e.values[feed.geometryField]
+                  this.geometries[idx] = records.map(record => {
+                    let geometry = record.values[feed.geometryField]
                     let markers = []
 
                     if (mapModuleField.isMulti) {
@@ -180,11 +209,13 @@ export default {
                     }
 
                     return ({
-                      title: e.values[feed.titleField],
+                      title: record.values[feed.titleField],
                       geometry: feed.displayPolygon ? geometry : [],
                       markers,
                       color: feed.options.color,
                       displayMarker: feed.displayMarker,
+                      recordID: record.recordID,
+                      moduleID: record.moduleID,
                     })
                   })
                 }
@@ -192,11 +223,16 @@ export default {
           })
       })).finally(() => {
         this.processing = false
+
+        setTimeout(() => {
+          if (!this.$refs.map) return
+          this.$refs.map.mapObject.invalidateSize()
+        })
       })
     },
 
     getIcon (item) {
-      item.circleColor = '#ffffff'
+      item.circleColor = '#FFFFFF'
 
       return divIcon({
         className: 'marker-pin',
@@ -227,6 +263,35 @@ export default {
     },
     enableMap () {
       if (this.editable) this.$refs.map.mapObject._handlers.forEach(handler => handler.enable())
+    },
+
+    goToCurrentLocation () {
+      this.$refs.map.mapObject.locate()
+    },
+
+    onLocationFound ({ latitude, longitude }) {
+      const zoom = this.$refs.map.mapObject._zoom >= 13 ? this.$refs.map.mapObject._zoom : 13
+      this.$refs.map.mapObject.flyTo([latitude, longitude], zoom)
+    },
+
+    onMarkerCLick (recordID, moduleID) {
+      const page = this.pages.find(p => p.moduleID === moduleID)
+      if (!page) {
+        return
+      }
+
+      const route = { name: 'page.record', params: { recordID, pageID: page.pageID } }
+
+      if (this.options.displayOption === 'newTab') {
+        window.open(this.$router.resolve(route).href)
+      } else if (this.options.displayOption === 'modal') {
+        this.$root.$emit('show-record-modal', {
+          recordID,
+          recordPageID: page.pageID,
+        })
+      } else {
+        this.$router.push(route)
+      }
     },
   },
 }

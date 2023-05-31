@@ -54,7 +54,9 @@
               label="name"
               :clearable="false"
               :options="roles"
+              :get-option-key="getOptionRoleKey"
               append-to-body
+              :calculate-position="calculateDropdownPosition"
               class="h-100 bg-white"
               @input="onRoleChange"
             />
@@ -183,11 +185,13 @@
           key="roleID"
           v-model="add.roleID"
           :options="roles"
+          :get-option-key="getOptionRoleKey"
           label="name"
           multiple
           clearable
           :disabled="!!add.userID"
           :placeholder="labels.add.role.placeholder"
+          :calculate-position="calculateDropdownPosition"
           class="bg-white"
         />
       </b-form-group>
@@ -204,9 +208,11 @@
           :disabled="!!add.roleID.length"
           :options="userOptions"
           :get-option-label="getUserLabel"
+          :get-option-key="getOptionUserKey"
           label="name"
           clearable
           :placeholder="labels.add.user.placeholder"
+          :calculate-position="calculateDropdownPosition"
           class="bg-white"
           @search="searchUsers"
         />
@@ -218,6 +224,7 @@
 import { modalOpenEventName, split } from './def.ts'
 import { VueSelect } from 'vue-select'
 import Rules from './form/Rules.vue'
+import calculateDropdownPosition from '../../mixins/vue-select-position'
 
 export default {
   i18nOptions: {
@@ -228,6 +235,10 @@ export default {
     Rules,
     VueSelect,
   },
+
+  mixins: [
+    calculateDropdownPosition
+  ],
 
   props: {
     labels: {
@@ -557,6 +568,14 @@ export default {
       }
 
       return this.$t(`permissions:ui.tooltip.unknown-context.${isUser ? 'user' : 'role'}`)
+    },
+
+    getOptionRoleKey ({ roleID }) {
+      return roleID
+    },
+
+    getOptionUserKey ({ userID }) {
+      return userID
     },
   },
 }

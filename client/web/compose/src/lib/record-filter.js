@@ -16,6 +16,7 @@ export function getRecordListFilterSql (filter) {
       }
 
       const fieldFilter = getFieldFilter(f.name, f.kind, f.value, f.operator)
+
       if (fieldFilter) {
         query += getFieldFilter(f.name, f.kind, f.value, f.operator)
         existsPreviousElement = true
@@ -28,7 +29,6 @@ export function getRecordListFilterSql (filter) {
 
 // Helper function that creates a query for a specific field kind
 export function getFieldFilter (name, kind, query = '', operator = '=') {
-  const boolQuery = toBoolean(query)
   const numQuery = Number.parseFloat(query)
 
   const build = (op, left, right) => {
@@ -40,6 +40,9 @@ export function getFieldFilter (name, kind, query = '', operator = '=') {
       case 'NOT IN':
         // flip left/right for IN/NOT IN
         return `${right} ${op} ${left}`
+      case 'BETWEEN':
+      case 'NOT BETWEEN':
+        return `${left} ${op} ${right}`
       default:
         return `${left} ${op} ${right}`
     }
@@ -50,6 +53,8 @@ export function getFieldFilter (name, kind, query = '', operator = '=') {
 
   if (kind === 'Bool') {
     const operation = operator === '=' ? 'is' : 'is not'
+    const boolQuery = toBoolean(query)
+
     if (boolQuery) {
       return `${name} ${operation} true`
     } else {
@@ -68,23 +73,55 @@ export function getFieldFilter (name, kind, query = '', operator = '=') {
     return undefined
   }
 
-  if (['Number'].includes(kind) && !isNaN(numQuery)) {
-    return build(operator, name, numQuery)
+  if (['Number'].includes(kind)) {
+    if (['BETWEEN', 'NOT BETWEEN'].includes(operator)) {
+      return build(operator, name, `${query.start} ${query.end}`)
+    } else if (!isNaN(numQuery)) {
+      return build(operator, name, `'${numQuery}'`)
+    }
   }
 
   if (['DateTime'].includes(kind)) {
-    // Build different querries if date, time or datetime
-    const date = moment(query, ['YYYY-MM-DDTHH:mm:ssZ', 'YYYY-MM-DD'])
-    const time = moment(query, ['HH:mm'])
+    const dataFmtEntry = (date) => `TIMESTAMP(DATE_FORMAT('${date.format()}', '%Y-%m-%dT%H:%i:00.%f+00:00'))`
 
-    // @note tweaking the template a bit:
-    // * adding %f to include fractions; mysql sometimes forces them when formatting date
-    // * changing Z to +00:00
-    // * doing the same for time-only fields
-    if (date.isValid()) {
-      return `TIMESTAMP(DATE_FORMAT(${name}, '%Y-%m-%dT%H:%i:00.%f+00:00')) ${operator} TIMESTAMP(DATE_FORMAT('${date.format()}', '%Y-%m-%dT%H:%i:00.%f+00:00'))`
-    } else if (time.isValid()) {
-      return `TIME(DATE_FORMAT(${name}, '%Y-%m-%dT%H:%i:00.%f+00:00')) ${operator} TIME('${query}')`
+    if (['BETWEEN', 'NOT BETWEEN'].includes(operator)) {
+      const startDateTime = moment(query.start, 'YYYY-MM-DDTHH:mm:ssZ', true)
+      const endDateTime = moment(query.end, 'YYYY-MM-DDTHH:mm:ssZ', true)
+
+      if (startDateTime.isValid() && endDateTime.isValid()) {
+        return build(operator, `TIMESTAMP(DATE_FORMAT(${name}, '%Y-%m-%dT%H:%i:00.%f+00:00'))`, `${dataFmtEntry(startDateTime)} ${dataFmtEntry(endDateTime)}`)
+      }
+
+      const startDate = moment(query.start, 'YYYY-MM-DD', true)
+      const endDate = moment(query.end, 'YYYY-MM-DD', true)
+
+      if (startDate.isValid() && endDate.isValid()) {
+        return build(operator, name, `DATE('${query.start}') DATE('${query.end}')`)
+      }
+
+      const startTime = moment(query.start, 'HH:mm', true)
+      const endTime = moment(query.end, 'HH:mm', true)
+
+      if (startTime.isValid() && endTime.isValid()) {
+        return build(operator, name, `TIME('${query.start}') TIME('${query.end}')`)
+      }
+    } else {
+      // Build different querries if date, time or datetime
+      const dateTime = moment(query, 'YYYY-MM-DDTHH:mm:ssZ', true)
+      const date = moment(query, 'YYYY-MM-DD', true)
+      const time = moment(query, 'HH:mm', true)
+
+      // @note tweaking the template a bit:
+      // * adding %f to include fractions; mysql sometimes forces them when formatting date
+      // * changing Z to +00:00
+      // * doing the same for time-only fields
+      if (dateTime.isValid()) {
+        return build(operator, `TIMESTAMP(DATE_FORMAT(${name}, '%Y-%m-%dT%H:%i:00.%f+00:00'))`, dataFmtEntry(dateTime))
+      } else if (date.isValid()) {
+        return build(operator, name, `DATE('${query}')`)
+      } else if (time.isValid()) {
+        return build(operator, name, `TIME('${query}')`)
+      }
     }
   }
 

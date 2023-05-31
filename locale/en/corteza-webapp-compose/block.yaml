@@ -1,3 +1,10 @@
+selector:
+  selectableBlocks:
+    placeholder: Blocks from other layouts
+  tooltip:
+    clone:
+      ref: Clone with references
+      noRef: Clone without references
 automation:
   addPlaceholderLabel: Add placeholder (dummy button)
   availableScriptsAndWorkflow: Available scripts and workflows ({{count}})
@@ -39,6 +46,7 @@ calendar:
   hideToday: Hide today button
   label: Calendar
   recordFeed:
+    colorPicker: Choose a color
     colorLabel: Event color
     eventAllDay: Show as all-day-events
     eventEndFieldLabel: Event end
@@ -65,11 +73,16 @@ calendar:
     listMonth: Agenda
     timeGridDay: Day
     timeGridWeek: Week
+    onEventClick: On event click
+    openInSameTab: Open record in the same tab
+    openInNewTab: Open record in a new tab
+    openInModal: Open record in a modal
   viewLabel: Calendar
 chart:
   add: New Chart
   addFunnel: Funnel chart
   addGauge: Gauge chart
+  addRadar: Radar chart
   addGeneric: Generic chart
   createFailed: Could not create a chart
   columns:
@@ -80,7 +93,11 @@ chart:
     label: Configure chart
     reportLabel: Report {{l}}
     reportsLabel: Reports
-  display: 'Chart to display inside this block:'
+  display: Chart to display inside this block
+  drillDown:
+    label: Drill down
+    description: If a record list is selected, it will be used to display the drill down data. If no record list is selected the drill down data will be shown in a modal.
+    openInModal: Open in modal
   edit:
     label: Edit chart
     dimension:
@@ -119,10 +136,16 @@ general:
     modal: Modal
     fullscreen: Fullscreen
   wrap: Display block as a card
+  hidden:
+    label: Hidden
   refresh:
-    label: Block auto-refresh interval
-    description: Setting value to less than 5 seconds disables auto-refresh
+    label: Refresh
+    auto: Auto refresh
+    show: Show refresh button
+    description: Setting value to 5 seconds or more enables auto-refresh
     rate: seconds
+  border:
+    show: Show border
   label:
     add: Add
     back: Back
@@ -135,8 +158,11 @@ general:
     permissions: Permissions
     remove: Remove
     save: Save
+    cancel: Cancel
     search: Search
-    magnify: Magnify Block
+    refresh: Refresh block
+    magnify: Magnify block
+    and: And
   module: Module
   style:
     danger: Danger variant
@@ -160,6 +186,10 @@ iframe:
   srcLabel: URL to show in the iframe
 metric:
   defaultMetricLabel: Unnamed metric
+  drillDown:
+    label: Drill down
+    description: If a record list is selected, it will be used to display the drill down data. If no record list is selected the drill down data will be shown in a modal.
+    openInModal: Open in modal
   edit:
     bucketLabel: Bucket size
     bucketPlaceholder: Select a bucket size
@@ -196,11 +226,15 @@ metric:
   editStyle:
     backgroundColor: Background color
     color: Text color
+    colorPicker: Choose a color
     fontSize: Font size in pixels
     labelLabel: Label style
     valueLabel: Value style
   label: Metric
 record:
+  referenceRecordField: Reference record field
+  referenceRecordFieldPlaceholder: Select reference record selector
+  referenceRecordFieldDescription: Multi value record selector fields are not available
   confirmDelete: Are you sure you want to delete this record?
   deleteFailed: Could not delete record
   deleteRecord: Delete record
@@ -215,13 +249,44 @@ record:
     fieldsFromModule: Single record block, displaying fields ({{0}}) from module {{1}}
     untitled: Untitled
   recordDeleted: This record was deleted
+  recordSelectorDisplayOptions: On record selector click
+  openInSameTab: Open record in the same tab
+  openInNewTab: Open record in a new tab
+  openInModal: Open record in a modal
+  fieldConditions:
+    label: Field conditions
+    action: + Add
+    placeholder: When should this field be displayed?
+    selectPlaceholder: Select field
+    help: Example
+    field: Field
+    condition: Condition
 recordList:
   addRecord: Add
   cancelSelection: Cancel
+  inlineEdit:
+    enabled: Inline value editing enabled
+    button:
+      title: Edit value
+    modal:
+      title: Update record values
+  bulkRecord:
+    title: Update selected records
+    field:
+      add: Add a field to update
+      addAnother: Add another field to update
+      remove: Remove field
+    reset: Reset
+  drillDown:
+    filter:
+      label: 'Chart drill down'
+  tooltip:
+    deleteSelected: Delete selected records
+    undeleteSelected: Undelete selected records
   editFields: Editable module fields
   export:
     all: Export all records
-    allow: Allow records export
+    allow: Users will be able to export records
     csv: CSV Export
     dateRange: 'Select date range:'
     query:
@@ -277,15 +342,28 @@ recordList:
       greaterThan: Greater than
       lessThan: Less than
       notEqual: Not equal
+      between: Between
+      notBetween: Not between
     title: Record list filter
     update: Update filter
     where: Where
     without: Without
+    presets: Filter presets
+    filters:
+      label: Filters
+      active: 'Active filters:'
+    name:
+      label: Name
+      placeholder: Filter name
+    role:
+      label: Role(s)
+      placeholder: Select role(s) to apply filter to
   hideRecordCloneButton: Hide clone record button
   hideRecordEditButton: Hide edit record button
   hideRecordPermissionsButton: Hide record permissions button
   hideRecordReminderButton: Hide record reminder button
   hideRecordViewButton: Hide view record button
+  enableRecordPageNavigation: Users will be able to navigate to previous/next record
   import:
     dropzoneFileAdded: '{{name}} was uploaded and is ready for import ({{count}} record)'
     dropzoneFileAdded_plural: '{{name}} was uploaded and is ready for import ({{count}} records)'
@@ -351,50 +429,69 @@ recordList:
   record:
     draggable: Can drag & drop records to order them
     fullPageNavigation: Full page navigation
-    hideAddButton: Hide add record button
-    hideImportButton: Hide import record button
-    hidePaging: Hide paging
-    inlineEditor: Inline editor
-    inlineEditorAllow: Allow inline record editing
-    inlineEditorFootnote: Only one inline editor with the same module can be present the same page
-    newLabel: New records
+    hideAddButton: Users will be able to add new records
+    hideImportButton: Users will be able to import records
+    pagingLabel: Paging
+    pagingOptions: Paging Options
+    moreOptions: More Options
+    hidePaging: User will be able to use Paging
+    inlineEditor: Inline Options
+    inlineEditorAllow: Inline record editor
+    recordsLabel: Records
     noPermission: No permission to read record
     perPage: Records per page
     prefilterFootnote: Simplified SQL condition (WHERE ...) syntax is supported. Variables like {{0}}, {{1}} and {{2}} are evaluated (when available)
-    prefilterHideSearch: Hide search box
-    prefilterLabel: Prefilter records
+    prefilterHideSearch: Users will be able to search the record list
+    filterHide: Users will be able to filter the list
+    prefilterLabel: Filtering
+    generalLabel: General Settings
+    prefilterCommand: Prefilter
     prefilterPlaceholder: field1 = 1 AND field2 = 232
     presortFootnote: Simplified SQL condition (ORDER BY ...) syntax is supported
     presortToggleInput: Toggle input type
-    presortHideSort: Hide sorting
-    presortLabel: Presort records
+    presortHideSort: Users will be able to sort the list
+    presortLabel: Sorting
+    presortInputLabel: Presort
     presortPlaceholder: field1 DESC, field2 ASC
     showTotalCount: Show total record count
-    openInSameTab: Open records in the same tab
-    openInNewTab: Open records in a new tab
-    openInModal: Open records in a modal
+    showDeletedRecordsOption: Show option to see deleted records
+    openInSameTab: Open record in the same tab
+    openInNewTab: Open record in a new tab
+    openInModal: Open record in a modal
+    enableBulkRecordEdit: Enable bulk record edit
     linkToParent: Link to parent record
+    buttons: Record buttons
     tooltip:
-      clone: Clone record
-      edit: Edit record
-      undelete: Undelete record
+      clone: Clone
+      edit: Edit
+      delete: Delete
+      restore: Restore
       reminder: Reminder
-      view: View record
-    recordDisplayOptions: Record display options
+      view: View
+      permissions: Permissions
+    recordDisplayOptions: On record click
+    recordSelectorDisplayOptions: On record selector click
   recordPage: record page
   refField:
     footnote: Field that links records with the parent record
     label: Parent field
-  selectable: Enable record selection
+  selectable: Users will be able to select records
   selected: '{{count}} of {{total}} records selected'
   sort:
     tooltip: Sort column
+  showRecords:
+    deleted: Show deleted records
+    existing: Show existing records
 recordOrganizer:
+  onRecordClick: On record click
+  openInSameTab: Open in the same tab
+  openInNewTab: Open in a new tab
+  openInModal: Open in a modal
   descriptionField:
     footnote: Field value will be used as record description
     label: Description field
   group:
-    footnote: Value that will be set to the key field. This does not affect the filtering. Make sure to specify the prefilter where needed.
+    footnote: Value that will be set to the key field. The records will be filtered based on this value, if it's defined.
     label: Key value
   groupField:
     footnote: Field whose value will change when a record is moved into the record organizer
@@ -406,7 +503,7 @@ recordOrganizer:
   noRecords: No records in module linked with record organizer. Drag and drop records here.
   notConfigured: Record organizer is not configured correctly
   positionField:
-    footnote: Records will be sorted based on this field
+    footnote: Records will be sorted based on this field. That field value will be updated based on the position of the record.
     label: Record sort field
   preview:
     label: 'Record Organizer block for module {{0}}. Label field {{1}}, Description field {{2}}. Value setting field: {{3}}, Sorted by position field: {{4}}.'
@@ -494,6 +591,58 @@ comment:
     footnote: 'Field value will be used as reference'
 navigation:
   chart: Charts
+  colorPicker: Choose a color
+  noNavigationItems: No navigation item configured
+  label: Navigation
+  displayOptions: Display options
+  appearance: Appearance
+  alignment: Alignment
+  justify: Justify
+  fieldLabel: Label
+  enabled: Enabled
+  openIn: Open in
+  navigationItems: Navigation items
+  type: Type
+  disabled: Disabled
+  color: Color
+  background: Background
+  url: URL
+  drop: Dropdown position
+  add: Add navigation item
+  addDropdown: Add dropdown item
+  composePage: Compose page
+  tabs: Tabs
+  pills: Pills
+  small: Small
+  center: Center
+  left: Left
+  right: Right
+  bottom: Bottom
+  top: Top
+  None: None
+  primary: Primary
+  secondary: Secondary
+  success: Success
+  warning: Warning
+  danger: Danger
+  info: Info
+  text: Text
+  dropdown: Dropdown
+  multi: Multiline
+  sameTab: Same tab
+  selectOpenInType: Select open in type
+  newTab: New tab
+  dropdownItems: Dropdown items
+  delimiter: Delimiter
+  none: None
+  displaySubPages: Display sub-pages
+  selectBackground: Select background
+  preview:
+    preview: Preview
+    label: Label
+    home: Home
+    dropdown: dropdown
+    about: about
 report:
   label: Report
   scenario:
@@ -549,7 +698,7 @@ progress:
     warning: Warning
 
 nylas:
-  label: Nylas Component
+  label: Office365/Google
 
   viewer:
     connect: Connect with Nylas
@@ -557,7 +706,7 @@ nylas:
     noComponentID: Nylas component ID is not configured
 
   configurator:
-    label: Nylas
+    label: Office365/Google
     kind: Component kind
     componentID: Component ID
     kinds:
@@ -575,14 +724,19 @@ geometry:
   addSource: Add source
   lock: Lock
   mapHelpText: Move and scroll the map to the position that will be used as a default. You can also lock the position or zoom to prevent users from moving too far.
+  onMarkerClick: On marker click
+  openInSameTab: Open in the same tab
+  openInNewTab: Open in a new tab
+  openInModal: Open in a modal
   recordFeed:
-    moduleLabel: Select module
+    colorPicker: Choose a color
+    moduleLabel: Module*
     modulePlaceholder: (No module)
     noMultiFields: Multi-value fields are currently not supported
     optionLabel: Records
     prefilterLabel: Prefilter sources
     colorLabel: Marker color
-    geometryFieldLabel: Geometry field
+    geometryFieldLabel: Geometry field*
     titleLabel: Title
     titlePlaceholder: Title
     geometryFieldPlaceholder: Geometry field
@@ -599,3 +753,55 @@ geometry:
     lockBounds: Lock bounds
     topLeft: Bounds top left
     lowerRight: Bounds lower right
+  tooltip:
+      goToCurrentLocation: Go to current location
+
+tabs:
+  alertTitle: Set a title for your block
+  title: Tabs
+  addTab: + Add
+  tab: Tab
+  selectBlock: Choose a block
+  noTabs: No tabs configured
+  noBlock: No block configured
+  displayTitle: Display Options
+  preview: Live example
+  newBlockModal: Add new block
+  placeholder:
+    block: Select a block to tab
+  style:
+    appearance:
+      label: Appearance
+      tabs: Tabs
+      pills: Pills
+      small: Small
+    alignment:
+      label: Alignment
+      left: Left
+      center: Center
+      right: Right
+    justify:
+      label: Justify
+      justify: Justify
+      none: None
+    orientation:
+      label: Orientation
+      vertical: Vertical
+      horizontal: Horizontal
+    position:
+      label: Position
+      start: Start
+      end: End
+  table:
+    columns:
+      title:
+        label: Title
+      block:
+        label: Block
+  tooltip:
+    edit: Edit block
+    editDisabled: Editing tabbed blocks is disabled until you save this block
+    addTab: Add tab
+    addBlock: Add new block
+    delete: Delete tab
+  label: Tabs

@@ -2,11 +2,12 @@
   <wrap
     v-bind="$props"
     v-on="$listeners"
+    @refreshBlock="refresh"
   >
     <template #default>
       <div
         v-if="!isConfigured"
-        class="p-3 text-danger"
+        class="d-flex align-items-center justify-content-center h-100 p-2"
       >
         {{ $t('recordOrganizer.notConfigured') }}
       </div>
@@ -18,6 +19,7 @@
           v-if="!processing"
           :id="draggableID"
           v-model="records"
+          handle=".record-item"
           :group="{ name: moduleID, pull: canPull, put: canPut }"
           :move="checkMove"
           class="h-100 pt-2 px-2 overflow-auto"
@@ -28,22 +30,22 @@
             #header
           >
             <div
-              class="p-2 text-secondary"
+              class="small p-2 text-secondary"
             >
               {{ $t('recordOrganizer.noRecords') }}
             </div>
           </template>
-          <router-link
+
+          <b-card
             v-for="record in records"
             :key="`${record.recordID}`"
-            tag="div"
-            class="mb-2 py-1 px-2 border rounded"
-            :class="{ 'pointer': roRecordPage, 'grab': canPull && record.canUpdateRecord }"
-            :to="{ name: 'page.record', params: { pageID: (roRecordPage || {}).pageID, recordID: record.recordID }, query: null }"
+            body-class="px-2 py-1"
+            class="record-item border border-light rounded mb-2 grab"
+            @click="handleRecordClick(record)"
           >
-            <b-card-title
+            <div
               v-if="labelField"
-              title-tag="h5"
+              class="d-flex mb-1"
             >
               <field-viewer
                 v-if="labelField.canReadRecordValue"
@@ -54,10 +56,14 @@
               />
               <i
                 v-else
-                class="text-secondary h6"
+                class="text-secondary"
               >{{ $t('field.noPermission') }}</i>
-            </b-card-title>
-            <b-card-text v-if="descriptionField">
+            </div>
+
+            <b-card-text
+              v-if="descriptionField"
+              class="d-flex small"
+            >
               <field-viewer
                 v-if="descriptionField.canReadRecordValue"
                 :field="descriptionField"
@@ -67,22 +73,19 @@
               />
               <i
                 v-else
-                class="text-primary h6"
+                class="text-secondary"
               >
                 {{ $t('field.noPermission') }}
               </i>
             </b-card-text>
-          </router-link>
+          </b-card>
         </draggable>
-        <h5
+        <div
           v-else
-          class="d-flex align-items-center justify-content-center w-100 h-100"
+          class="d-flex align-items-center justify-content-center h-100"
         >
-          <b-spinner
-            variant="primary"
-            class="p-4"
-          />
-        </h5>
+          <b-spinner />
+        </div>
       </div>
     </template>
     <template
@@ -90,11 +93,11 @@
       #footer
     >
       <div
-        class="d-flex align-items-center m-0 px-1 py-2"
+        class="p-2"
       >
         <b-button
-          variant="link"
-          class="text-decoration-none pl-2"
+          variant="outline-light"
+          class="d-flex align-items-center justify-content-center text-primary border-0"
           @click.prevent="createNewRecord"
         >
           {{ $t('recordOrganizer.addNewRecord') }}
@@ -110,7 +113,8 @@ import base from './base'
 import draggable from 'vuedraggable'
 import FieldViewer from 'corteza-webapp-compose/src/components/ModuleFields/Viewer'
 import users from 'corteza-webapp-compose/src/mixins/users'
-import { evaluatePrefilter } from 'corteza-webapp-compose/src/lib/record-filter'
+import records from 'corteza-webapp-compose/src/mixins/records'
+import { evaluatePrefilter, getFieldFilter } from 'corteza-webapp-compose/src/lib/record-filter'
 import { compose, NoID } from '@cortezaproject/corteza-js'
 
 export default {
@@ -127,6 +131,7 @@ export default {
 
   mixins: [
     users,
+    records,
   ],
 
   data () {
@@ -223,14 +228,15 @@ export default {
 
   watch: {
     options: {
-      immediate: true,
       deep: true,
-      handler (options = {}) {
-        if (!options.moduleID) {
-          // Make sure block is properly configured
-          throw Error(this.$t('notification:record.moduleOrPageNotSet'))
-        }
+      handler () {
+        this.refresh()
+      },
+    },
 
+    'record.recordID': {
+      immediate: true,
+      handler () {
         this.refresh()
       },
     },
@@ -238,6 +244,14 @@ export default {
 
   created () {
     this.refreshBlock(this.refresh)
+  },
+
+  mounted () {
+    this.$root.$on(`refetch-non-record-blocks:${this.page.pageID}`, this.refresh)
+  },
+
+  beforeDestroy () {
+    this.$root.$off(`refetch-non-record-blocks:${this.page.pageID}`)
   },
 
   methods: {
@@ -312,13 +326,16 @@ export default {
 
       // Prefill values with the group value set in the options
       const values = {}
-      if (groupField && group) {
+      if (groupField) {
         values[groupField] = group
       }
-      this.$router.push({ name: 'page.record.create', params: { pageID, values: values } })
+
+      this.$router.push({ name: 'page.record.create', params: { pageID, values: values, refRecord: this.record } })
     },
 
     expandFilter () {
+      const filter = []
+
       /* eslint-disable no-template-curly-in-string */
       if (!this.record) {
         // If there is no current record and we are using recordID/ownerID variable in (pre)filter
@@ -336,15 +353,19 @@ export default {
         // Little magic here: filter is wraped with backticks and evaluated
         // this allows us to us ${record.values....}, ${recordID}, ${ownerID}, ${userID} in filter string;
         // hence the /hanging/ record, recordID, ownerID and userID variables
-        return evaluatePrefilter(this.options.filter, {
+        filter.push(`(${evaluatePrefilter(this.options.filter, {
           record: this.record,
           recordID: (this.record || {}).recordID || NoID,
           ownerID: (this.record || {}).ownedBy || NoID,
           userID: (this.$auth.user || {}).userID || NoID,
-        })
+        })})`)
       }
 
-      return ''
+      if (this.groupField && this.options.group !== undefined) {
+        filter.push(`(${getFieldFilter(this.groupField.name, this.groupField.kind, this.options.group, '=')})`)
+      }
+
+      return filter.join(' AND ')
     },
 
     /**
@@ -363,7 +384,7 @@ export default {
       const { namespaceID, moduleID, recordID } = record
 
       if (moduleID !== this.options.moduleID) {
-        throw Error('Record incompatible, module mismatch')
+        throw Error(this.$t('record.moduleMismatch'))
       }
 
       const { positionField, groupField } = this.options
@@ -388,7 +409,7 @@ export default {
         args: Object.keys(args).map(name => ({ name, value: String(args[name]) })),
       }
 
-      return this.$ComposeAPI.recordExec(params)
+      return this.$ComposeAPI.recordExec(params).then(this.pullRecords)
     },
 
     /**
@@ -398,38 +419,70 @@ export default {
      * @param {String}            query Filter records
      * @returns {Promise<Record[]>}
      */
-    async fetchRecords (module, query) {
-      if (module.moduleID !== this.options.moduleID) {
-        throw Error('Module incompatible, module mismatch')
+    async pullRecords () {
+      if (!this.roModule) {
+        return
       }
 
-      const { labelField, descriptionField, positionField } = this.options
-      const { moduleID, namespaceID } = module
-      const sort = positionField || `updatedAt, ${labelField || descriptionField}`
+      if (this.roModule.moduleID !== this.options.moduleID) {
+        throw Error(this.$t('record.moduleMismatch'))
+      }
+
+      const query = this.expandFilter()
+      const { positionField } = this.options
+      const { moduleID, namespaceID } = this.roModule
+      const sort = positionField || 'updatedAt'
+
+      this.processing = true
 
       return this.$ComposeAPI.recordList({ namespaceID, moduleID, query, sort })
-        .then(({ set }) => set.map(r => Object.freeze(new compose.Record(module, r))))
+        .then(({ set }) => {
+          const fields = [this.labelField, this.descriptionField].filter(f => !!f)
+          this.records = set.map(r => Object.freeze(new compose.Record(this.roModule, r)))
+
+          return Promise.all([
+            this.fetchUsers(fields, this.records),
+            this.fetchRecords(namespaceID, fields, this.records),
+          ])
+        }).catch(e => {
+          console.error(e)
+        }).finally(() => {
+          this.processing = false
+        })
+    },
+
+    handleRecordClick (record) {
+      if (!this.roRecordPage) return
+
+      const page = this.pages.find(p => p.moduleID === this.moduleID)
+      if (!page) {
+        return
+      }
+
+      const route = {
+        name: 'page.record',
+        params: {
+          pageID: (this.roRecordPage || {}).pageID,
+          recordID: record.recordID,
+        },
+        query: null,
+      }
+
+      if (this.options.displayOption === 'newTab') {
+        window.open(this.$router.resolve(route).href)
+      } else if (this.options.displayOption === 'modal') {
+        this.$root.$emit('show-record-modal', {
+          recordID: record.recordID,
+          recordPageID: (this.roRecordPage || {}).pageID,
+        })
+      } else {
+        this.$router.push(route)
+      }
     },
 
     refresh () {
-      if (this.roModule) {
-        this.processing = true
-
-        this.fetchRecords(this.roModule, this.expandFilter())
-          .then(rr => {
-            this.records = rr
-            const fields = [this.labelField, this.descriptionField].filter(f => !!f)
-            this.fetchUsers(fields, this.records)
-          })
-          .catch(e => {
-            console.error(e)
-          })
-          .finally(() => {
-            this.processing = false
-          })
-      }
+      this.pullRecords()
     },
-
   },
 }
 </script>
@@ -437,5 +490,9 @@ export default {
 <style lang="scss" scoped>
 .grab {
   cursor: grab !important;
+}
+
+.record-item:hover {
+  box-shadow: 0 0.125rem 0.25rem rgb(0 0 0 / 8%) !important;
 }
 </style>

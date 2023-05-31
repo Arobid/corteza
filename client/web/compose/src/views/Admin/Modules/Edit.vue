@@ -113,7 +113,7 @@
                         :title="module.name || module.handle || module.moduleID"
                         :target="module.name || module.handle || module.moduleID"
                         :resource="`corteza::compose:module/${namespace.namespaceID}/${module.moduleID}`"
-                        :button-label="$t('general:label.module')"
+                        :button-label="$t('general:label.module.single')"
                         :show-button-icon="false"
                         button-variant="white text-left w-100"
                       />
@@ -274,8 +274,12 @@
                           <th />
                           <th />
 
-                          <th class="text-primary text-center">
+                          <th class="text-primary text-center pr-3">
                             {{ $t('general:label.required') }}
+                          </th>
+
+                          <th class="text-primary text-center pl-2">
+                            {{ $t('general:label.multi') }}
                           </th>
 
                           <th />
@@ -284,7 +288,7 @@
 
                       <draggable
                         v-model="module.fields"
-                        :options="{ handle:'.handle' }"
+                        handle=".handle"
                         tag="tbody"
                       >
                         <field-row-edit
@@ -297,6 +301,7 @@
                           :is-duplicate="!!duplicateFields[index]"
                           @edit="handleFieldEdit(module.fields[index])"
                           @delete="module.fields.splice(index, 1)"
+                          @updateKind="handleFieldKindUpdate(index)"
                         />
                       </draggable>
 
@@ -340,10 +345,9 @@
               </b-tab>
 
               <b-tab
-                v-if="module.config.recordDeDup.enabled"
-                :title="$t('edit.config.validation.title')"
+                :title="$t('edit.config.uniqueValues.title')"
               >
-                <validation
+                <unique-values
                   :module="module"
                 />
               </b-tab>
@@ -458,7 +462,7 @@ import DalSettings from 'corteza-webapp-compose/src/components/Admin/Module/DalS
 import RecordRevisionsSettings from 'corteza-webapp-compose/src/components/Admin/Module/RecordRevisionsSettings'
 import DataPrivacySettings from 'corteza-webapp-compose/src/components/Admin/Module/DataPrivacySettings'
 import ModuleTranslator from 'corteza-webapp-compose/src/components/Admin/Module/ModuleTranslator'
-import Validation from 'corteza-webapp-compose/src/components/Admin/Module/Validation'
+import UniqueValues from 'corteza-webapp-compose/src/components/Admin/Module/UniqueValues'
 import RelatedPages from 'corteza-webapp-compose/src/components/Admin/Module/RelatedPages'
 import { compose, NoID } from '@cortezaproject/corteza-js'
 import EditorToolbar from 'corteza-webapp-compose/src/components/Admin/EditorToolbar'
@@ -485,8 +489,8 @@ export default {
     ModuleTranslator,
     RelatedPages,
     EditorToolbar,
-    Validation,
     Export,
+    UniqueValues,
   },
 
   props: {
@@ -705,6 +709,11 @@ export default {
       this.updateField = compose.ModuleFieldMaker({ ...field })
     },
 
+    handleFieldKindUpdate (index) {
+      const field = this.module.fields[index]
+      this.module.fields.splice(index, 1, compose.ModuleFieldMaker({ ...field }))
+    },
+
     handleFieldSave (field) {
       const i = this.module.fields.findIndex(f => f.name === field.name)
       if (i > -1) {
@@ -757,7 +766,7 @@ export default {
 
           this.module = new compose.Module({ ...module }, this.namespace)
 
-          this.toastSuccess(this.$t('notification:module.saved'))
+          this.toastSuccess(this.$t('notification:module.created'))
           if (closeOnSuccess) {
             this.$router.push({ name: 'admin.modules' })
           } else {

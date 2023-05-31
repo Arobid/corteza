@@ -14,7 +14,7 @@ kind:
     dateOnly: Date Only
     futureValuesOnly: Future Value Only
     label: Date and time
-    outputFormat: 'Output format:'
+    outputFormat: Output format
     outputFormatFootnote: See {{0}} for formatting options
     pastValuesOnly: Past Values Only
     relativeOutput: 'Output Relative value (eg: 3 days ago)'
@@ -45,9 +45,13 @@ kind:
       maxWidth: Max width
       borderRadius: Border radius
       background: Background color
+      colorPicker: Choose a color
       margin: Margin
       unitType: Unit type
       px: px
+      enableDownload: Enable download
+      clickToView: Click to view file
+      description: 'Add unit after value to set it. For example: 50px or 50%'
   number:
     exampleFormat: Format
     exampleInput: Input
@@ -104,6 +108,7 @@ kind:
     prefilterLabel: Prefilter records
     prefilterPlaceholder: field1 = 1 AND field2 = 232
   select:
+    allow-duplicates: Allow duplicates
     label: Select
     optionAdd: Add
     optionLabelPlaceholder: Label
@@ -141,8 +146,16 @@ kind:
     label: Geometry
     latitude: Latitude
     longitude: Longitude
-    clickToPlaceMarker: Click to place a marker or click on a marker to remove it
+    clickToPlaceMarker: Click to place/remove a marker
     initialZoomAndPosition: Set initial map zoom and position
+    prefillWithCurrentLocation: Prefill with current location
+    hideCurrentLocationButton: Hide current location button
+    hideGeoSearch: Hide location search
+    tooltip:
+      goToCurrentLocation: Go to current location
+      useCurrentLocation: Use current location
+      openMap: Open map
+    geosearchInputPlaceholder: Enter address, place or postcode
 noPermission: No permission to read field value
 no-items-found: No items found
 options:
@@ -222,3 +235,16 @@ valueExpr:
 label:
   required: Required
   multi: Multi value
+constraints:
+  label: Unique value constraint
+  description: Use unique value constraints for this field
+  ignoreCase: Ignore case
+  fuzzyMatch: Fuzzy match
+  soundsLike: Sounds like
+  caseSensitive: Case sensitive
+  oneOf: One of
+  none: None
+  equal: Equal
+  valueModifiers: Value modifiers
+  multiValues: Multi-field values
+  totalFieldConstraintCount: The field is used in {{total}} other unique value constraint. See "unique values" tab on module editor.

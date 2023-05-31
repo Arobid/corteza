@@ -58,8 +58,6 @@ interface Config {
   };
 
   recordDeDup: {
-    enabled: boolean;
-    strict: boolean;
     rules: RecordDeDupRule[];
   };
 }
@@ -68,13 +66,20 @@ interface ConfigDiscoveryAccess {
   result: {
     lang: string;
     fields: string[];
-  };
+  }[]
+}
+
+interface Constraint {
+    attribute: string;
+    modifier: string;
+    multiValue: string;
+    type: string;
 }
 
 interface RecordDeDupRule {
-  name: string;
+  name?: string;
   strict: boolean;
-  attributes: string[];
+  constraints: Constraint[];
 }
 
 /**
@@ -138,22 +143,28 @@ export class Module {
 
     discovery: {
       public: {
-        result: {
-          lang: '',
-          fields: [],
-        },
+        result: [
+          {
+            lang: '',
+            fields: [],
+          },
+        ],
       },
       private: {
-        result: {
-          lang: '',
-          fields: [],
-        },
+        result: [
+          {
+            lang: '',
+            fields: [],
+          }
+        ],
       },
       protected: {
-        result: {
-          lang: '',
-          fields: [],
-        },
+        result: [
+          {
+            lang: '',
+            fields: [],
+          },
+        ],
       },
     },
 
@@ -163,10 +174,12 @@ export class Module {
     },
 
     recordDeDup: {
-      // Always true for now since empty array of rules is the same as disabling it
-      enabled: true,
-      strict: false,
-      rules: [],
+      rules: [
+        {
+          strict: true,
+          constraints: []
+        }
+      ],
     },
   }
 
@@ -222,11 +235,6 @@ export class Module {
 
     if (IsOf(m, 'config')) {
       this.config = merge({}, this.config, m.config)
-
-      // Remove when we improve duplicate detection, for now its always enabled
-      if (this.config.recordDeDup) {
-        this.config.recordDeDup.enabled = true
-      }
     }
 
     if (IsOf(m, 'labels')) {

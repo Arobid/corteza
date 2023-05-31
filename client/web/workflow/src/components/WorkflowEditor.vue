@@ -329,7 +329,7 @@
         <export
           data-test-id="button-export-workflow"
           :workflows="[workflow.workflowID]"
-          :file-name="workflow.handle"
+          :file-name="workflow.meta.name || workflow.handle"
           class="ml-1"
         />
 
@@ -386,7 +386,7 @@
             variant="primary"
             data-test-id="button-save-workflow"
             class="ml-auto"
-            :disabled="!canSave"
+            :disabled="canSave"
             @click="saveWorkflow()"
           >
             {{ $t('editor:save') }}
@@ -492,6 +492,7 @@ import VueJsonEditor from 'v-jsoneditor'
 import Import from '../components/Import'
 import Export from '../components/Export'
 import { NoID } from '@cortezaproject/corteza-js'
+import { handle } from '@cortezaproject/corteza-vue'
 
 const {
   mxClient,
@@ -639,14 +640,8 @@ export default {
 
   computed: {
     getSidebarItemType () {
-      const { itemType } = this.sidebar
-      if (itemType) {
-        if (itemType === 'edge') {
-          return 'Connector'
-        }
-        return itemType.charAt(0).toUpperCase() + itemType.slice(1)
-      }
-      return itemType
+      const { item } = this.sidebar
+      return this.$t(`steps:${item.node.style}.short`) || item.node.style
     },
 
     getSidebarItemIcon () {
@@ -670,8 +665,16 @@ export default {
       return this.workflow.workflowID === '0' ? this.canCreate : this.workflow.canUpdateWorkflow
     },
 
+    nameState () {
+      return this.workflow.meta.name ? null : false
+    },
+
+    handleState () {
+      return handle.handleState(this.workflow.handle)
+    },
+
     canSave () {
-      return this.canUpdateWorkflow
+      return !this.canUpdateWorkflow || [this.nameState, this.handleState].includes(false)
     },
 
     isDeleted () {
@@ -2200,12 +2203,6 @@ export default {
                 }
               }
 
-              // Reset state and refresh the trigger label so spinner disappears
-              this.dryRun.lookup = true
-              this.dryRun.processing = false
-              this.dryRun.sessionID = undefined
-              this.redrawLabel(this.graph.model.getCell(this.dryRun.cellID).mxObjectId)
-
               // If error or no stacktrace, raise an error/warning
               if (error) {
                 throw new Error(error)
@@ -2237,6 +2234,13 @@ export default {
 
           setTimeout(sessionReader, 1000)
         }).catch(this.toastErrorHandler(this.$t('notification:failed-test')))
+        .finally(() => {
+          // Reset state and refresh the trigger label so spinner disappears
+          this.dryRun.lookup = true
+          this.dryRun.processing = false
+          this.dryRun.sessionID = undefined
+          this.redrawLabel(this.graph.model.getCell(this.dryRun.cellID).mxObjectId)
+        })
     },
 
     cancelWorkflow () {
@@ -2548,7 +2552,7 @@ export default {
 }
 
 .toolbar {
-  background-color: #F3F3F5 !important;
+  background-color: $gray-200 !important;
   width: 66px;
 }
 

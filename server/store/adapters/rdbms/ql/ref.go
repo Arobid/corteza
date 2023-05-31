@@ -13,8 +13,9 @@ type (
 	ExprHandlerMap map[string]*ExprHandler
 
 	ExprHandler struct {
-		Handler  func(...exp.Expression) exp.Expression
-		HandlerE func(...exp.Expression) (exp.Expression, error)
+		Handler      func(...exp.Expression) exp.Expression
+		HandlerE     func(...exp.Expression) (exp.Expression, error)
+		RangeHandler func(exp.Expression, exp.RangeVal) exp.Expression
 	}
 )
 
@@ -181,6 +182,18 @@ var (
 			},
 		},
 
+		// range operation
+		"between": {
+			Handler: func(args ...exp.Expression) exp.Expression {
+				return exp.NewRangeExpression(exp.BetweenOp, args[0], exp.NewRangeVal(args[1], args[2]))
+			},
+		},
+		"nbetween": {
+			Handler: func(args ...exp.Expression) exp.Expression {
+				return exp.NewRangeExpression(exp.NotBetweenOp, args[0], exp.NewRangeVal(args[1], args[2]))
+			},
+		},
+
 		"is": {
 			Handler: func(args ...exp.Expression) exp.Expression {
 				return exp.NewBooleanExpression(exp.IsOp, args[0], args[1])
@@ -280,6 +293,12 @@ var (
 				return exp.NewSQLFunctionExpression("MAX", args[0])
 			},
 		},
+
+		"std": {
+			HandlerE: func(args ...exp.Expression) (exp.Expression, error) {
+				return nil, fmt.Errorf("STD function not supported on this database")
+			},
+		},
 	}
 )
 
@@ -302,6 +321,10 @@ func (ee ExprHandlerMap) RefHandler(n *ql.ASTNode, args ...exp.Expression) (exp.
 
 	if ee[r] == nil {
 		return nil, fmt.Errorf("unknown ref %q", r)
+	}
+
+	if ee[r].Handler != nil && ee[r].HandlerE != nil {
+		panic("invalid ql ref definition: both Handler and HandlerE are set")
 	}
 
 	if ee[r].Handler != nil {

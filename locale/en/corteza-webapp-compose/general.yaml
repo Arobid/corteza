@@ -1,7 +1,7 @@
 label:
   app-name:
-    public: Low Code
-    private: Low Code - Admin
+    public: Namespaces
+    private: Namespaces - Admin
   actions: Actions
   active: Active
   add: Add
@@ -22,6 +22,7 @@ label:
   close: Close
   create: Create
   delete: Delete
+  restore: Restore
   descending: Descending
   description: Description
   download: Download
@@ -33,13 +34,13 @@ label:
   general: General
   handle: Handle
   here: here
+  home: Home
   import: Import
   importPlaceholder: Upload files to import
   loading: Loading
   makeDefault: Make default
-  module: Module
   moduleName: Module name
-  multi: Multi value
+  multi: Multi
   name: Name
   next: Next
   no: No
@@ -47,7 +48,8 @@ label:
   none: None
   now: Now
   ok: Ok
-  openBookmarks: Open bookmarks
+  page: Page
+  pageLayout: Page layout
   pageBuilder: Page builder
   permissions: Permissions
   private: Private
@@ -77,6 +79,15 @@ label:
   validation: Validation
   view: View
   yes: Yes
+  chart:
+    single: Chart
+    plural: Charts
+  namespace:
+    single: Namespace
+    plural: Namespaces
+  module: 
+    single: Module
+    plural: Modules
 navigation:
   chart: Charts
   namespace: Namespaces
@@ -88,17 +99,22 @@ placeholder:
 reminder:
   add: Add a new reminder
   dismiss: Dismiss
+  dismissed: Dismissed
+  undismiss: Undismiss
+  delete: Delete reminder
+  recordPageLink: View record
   edit:
+    label: Edit reminder
     assigneeLabel: Assignee
     assigneePlaceholder: Myself (default)
     notesLabel: Notes
     notesPlaceholder: Notes
-    remindAtLabel: Notify me
+    remindAtLabel: Remind me at
     remindAtNone: Never
     titleLabel: Title
     titlePlaceholder: Title
   listLabel: Reminders
-  routesTo: 'Includes link to:'
+  routesTo: Label for page link
   snooze: Snooze
 tooltip:
   dragAndDrop: Drag and drop to change order
@@ -140,6 +156,18 @@ resourceList:
   pagination:
     next: Next
     prev: Previous
-    showing: '{{from}} - {{to}} of {{count}} items'
-    single: One item
-    single_plural: '{{count}} items'
+    showing: '{{from}} - {{to}} of {{count}} {{data}}'
+    single: 'One {{data}}'
+    single_plural: '{{count}} {{data}}'
+recordNavigation:
+  next: Next record
+  prev: Previous record
+variants:
+  primary: Primary
+  secondary: Secondary
+  light: Light
+  dark: Dark
+  info: Info
+  success: Success
+  danger: Danger
+  warning: Warning

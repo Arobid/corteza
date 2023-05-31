@@ -33,6 +33,11 @@ export default {
       required: true,
     },
 
+    blocks: {
+      type: Array,
+      default: () => [],
+    },
+
     block: {
       type: compose.PageBlock,
       required: true,
@@ -75,13 +80,12 @@ export default {
       get () {
         return this.block.options
       },
-
       set (options) {
         this.block.options = options
       },
     },
 
-    allowsRefresh () {
+    autoRefreshEnabled () {
       return this.options.refreshRate >= 5 && ['page', 'page.record'].includes(this.$route.name)
     },
   },
@@ -94,21 +98,14 @@ export default {
     /**
      *
      * @param {*} refreshFunction
-     * @param {*} forceRerender
-     * Key is used to force a component to re-render
-     * However, sometimes reloading data is enough
-     * Attach :key="key" if you need to re-render a component
-     *
+     * If reloading data does not refresh the page block
+     * You should attach :key="key" to it and increment it in the refreshFunction
      */
-    refreshBlock (refreshFunction, forceRerender) {
-      if (!this.allowsRefresh || this.refreshInterval) return
+    refreshBlock (refreshFunction, ...params) {
+      if (!this.autoRefreshEnabled || this.refreshInterval) return
 
       const interval = setInterval(() => {
-        refreshFunction()
-
-        if (forceRerender) {
-          this.key++
-        }
+        refreshFunction(...params)
       }, this.options.refreshRate * 1000)
 
       this.refreshInterval = interval

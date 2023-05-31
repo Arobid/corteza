@@ -5,9 +5,11 @@
     :disabled="_disabled"
     :options="sensitivityLevels"
     :get-option-label="getLabel"
+    :get-option-key="getOptionKey"
     :placeholder="placeholder"
     :reduce="l => l.sensitivityLevelID"
     append-to-body
+    :calculate-position="calculateDropdownPosition"
     class="bg-white"
     @input="onInput"
   />
@@ -16,11 +18,16 @@
 <script>
 import { NoID } from '@cortezaproject/corteza-js'
 import { VueSelect } from 'vue-select'
+import calculateDropdownPosition from '../../mixins/vue-select-position'
 
 export default {
   components: {
     VueSelect,
   },
+
+  mixins: [
+    calculateDropdownPosition
+  ],
 
   props: {
     value: {
@@ -95,7 +102,11 @@ export default {
 
     onInput (sensitivityLevelID) {
       this.$emit('input', sensitivityLevelID ? sensitivityLevelID : NoID)
-    }
+    },
+
+    getOptionKey ({ sensitivityLevelID }) {
+      return sensitivityLevelID
+    },
   }
 }
 </script>

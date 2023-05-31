@@ -11,6 +11,9 @@ interface Options {
   groupField: string;
   group: string;
   refreshRate: number;
+  showRefresh: boolean;
+  magnifyOption: string;
+  displayOption: string;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
@@ -22,6 +25,9 @@ const defaults: Readonly<Options> = Object.freeze({
   groupField: '',
   group: '',
   refreshRate: 0,
+  showRefresh: false,
+  magnifyOption: '',
+  displayOption: 'sameTab'
 })
 
 export class PageBlockRecordOrganizer extends PageBlock {
@@ -38,8 +44,9 @@ export class PageBlockRecordOrganizer extends PageBlock {
     if (!o) return
 
     Apply(this.options, o, CortezaID, 'moduleID')
-    Apply(this.options, o, String, 'labelField', 'descriptionField', 'filter', 'positionField', 'groupField', 'group')
+    Apply(this.options, o, String, 'labelField', 'descriptionField', 'filter', 'positionField', 'groupField', 'group', 'magnifyOption', 'displayOption')
     Apply(this.options, o, Number, 'refreshRate')
+    Apply(this.options, o, Boolean, 'showRefresh')
   }
 }
 

@@ -150,6 +150,27 @@ endpoints:
         required: true
         title: Client ID
 
+- title: Expressions
+  path: "/expressions"
+  entrypoint: expression
+  endpoint: expressions
+  authentication: []
+  apis:
+  - name: evaluate
+    method: POST
+    title: Evaluate expressions
+    path: "/evaluate"
+    parameters:
+      post:
+        - name: variables
+          type: map[string]interface{}
+          parser: parseMapStringInterface
+          title: variables
+        - name: expressions
+          type: map[string]string
+          parser: parseMapStringString
+          title: expressions
+
 - title: Settings
   path: "/settings"
   entrypoint: settings
@@ -710,6 +731,59 @@ endpoints:
        - { type: uint64, name: userID,        required: true, title: ID }
        - { type: uint64, name: credentialsID, required: true, title: Credentials ID }
 
+  - name: profileAvatar
+    method: POST
+    title: User's profile avatar
+    path: "/{userID}/avatar"
+    parameters:
+      path:
+        - type: uint64
+          name: userID
+          required: true
+          title: User ID
+      post:
+        - name: upload
+          type: "*multipart.FileHeader"
+          title: Avatar to upload
+          required: false
+        - name: width
+          type: uint
+          title: Avatar width dimension
+          required: false
+        - name: height
+          type: uint
+          title: Avatar height dimension
+          required: false
+  - name: profileAvatarInitial
+    method: POST
+    title: User profile avatar initial
+    path: "/{userID}/avatar-initial"
+    parameters:
+      path:
+        - type: uint64
+          name: userID
+          required: true
+          title: User ID
+      post:
+        - name: avatarColor
+          type: string
+          title: Avatar text color
+          required: false
+        - name: avatarBgColor
+          type: string
+          title: Avatar initial background color
+          required: false
+  - name: deleteAvatar
+    method: DELETE
+    title: delete user's profile avatar
+    path: "/{userID}/avatar"
+    parameters:
+      path:
+        - type: uint64
+          name: userID
+          required: true
+          title: User ID
+
   - name: export
     method: GET
     title: Export users
@@ -783,7 +857,7 @@ endpoints:
     path: "/"
     parameters:
       post:
-      - { name: "handle", type: "string",                        required: true }
+      - { name: "handle", type: "string",                        required: false }
       - { name: "level",  type: "int",                           required: true }
       - { name: "meta",   type: "types.DalSensitivityLevelMeta", required: true,  parser: "types.ParseDalSensitivityLevelMeta" }
   - name: update
@@ -797,7 +871,7 @@ endpoints:
         required: true
         title: Connection ID
       post:
-      - { name: "handle", type: "string",                        required: true }
+      - { name: "handle", type: "string",                        required: false }
       - { name: "level",  type: "int",                           required: true }
       - { name: "meta",   type: "types.DalSensitivityLevelMeta", required: true,  parser: "types.ParseDalSensitivityLevelMeta" }
 
@@ -1347,6 +1421,16 @@ endpoints:
     method: PATCH
     title: Dismiss reminder
     path: "/{reminderID}/dismiss"
+    parameters:
+      path:
+      - type: uint64
+        name: reminderID
+        required: true
+        title: reminder ID
+  - name: undismiss
+    method: PATCH
+    title: Undismiss reminder
+    path: "/{reminderID}/undismiss"
     parameters:
       path:
       - type: uint64
@@ -2084,6 +2168,15 @@ endpoints:
     title: Hit details
     path: "/hit/{hitID}"
     parameters: { path: [ { name: hitID, type: string, required: true, title: "Hit ID" } ] }
+  - name: purge all
+    method: POST
+    title: Purge all profiler hits
+    path: "/purge"
+  - name: purge
+    method: POST
+    title: Purge route profiler hits
+    path: "/purge/{routeID}"
+    parameters: { path: [ { name: routeID, type: "uint64", title: "Route ID", required: true } ] }
 
 - title: Locale
   entrypoint: locale
@@ -2160,78 +2253,11 @@ endpoints:
       - { type: string, name: lang,      required: true,  title: Language  }
       - { type: string, name: application, required: true, title: Application name }
 
-- title: Data Privacy Request
-  entrypoint: dataPrivacyRequest
-  imports:
-    - github.com/cortezaproject/corteza/server/system/types
-  path: "/data-privacy/requests"
-  apis:
-    - name: list
-      method: GET
-      title: List data privacy requests
-      path: "/"
-      parameters:
-        get:
-          - { name: requestedBy,        type: "[]string",   title: "Filter by user ID" }
-          - { name: query,              type: "string",     title: "Filter requests" }
-          - { name: kind,               type: "[]string",   title: "Filter by kind: correct, delete, export" }
-          - { name: status,             type: "[]string",   title: "Filter by status: pending, cancel, approve, reject" }
-          - { name: limit,              type: "uint",       title: "Limit" }
-          - { name: pageCursor,         type: "string",     title: "Page cursor" }
-          - { name: sort,               type: "string",     title: "Sort items" }
-    - name: create
-      method: POST
-      title: Create data privacy request
-      path: "/"
-      parameters:
-        post:
-          - { name: kind,         type: "string",   title: "Request Kind", required: true }
-          - { name: payload,      type: "types.DataPrivacyRequestPayloadSet", title: Request, required: false, parser: types.ParseDataPrivacyRequestPayload }
-
-    - name: update status
-      method: PATCH
-      title: Update data privacy request status
-      path: "/{requestID}/status/{status}"
-      parameters:
-        path:
-          - { name: requestID,     type: "uint64",   title: "ID",             required: true }
-          - { name: status,        type: "string",   title: "Request Status", required: true }
-    - name: read
-      method: GET
-      title: Get details about specific request
-      path: "/{requestID}"
-      parameters:
-        path:
-          - { name: requestID, type: "uint64",     title: "Request ID", required: true }
-
-- title: Data Privacy Request Comment
-  entrypoint: dataPrivacyRequestComment
-  path: "/data-privacy/requests/{requestID}/comments"
-  parameters:
-    path:
-      - { name: requestID, type: "uint64",     title: "Request ID", required: true }
-  apis:
-    - name: list
-      method: GET
-      title: List data privacy request comments
-      path: "/"
-      parameters:
-        get:
-          - { name: limit,              type: "uint",       title: "Limit" }
-          - { name: pageCursor,         type: "string",     title: "Page cursor" }
-          - { name: sort,               type: "string",     title: "Sort items" }
-    - name: create
-      method: POST
-      title: Create data privacy request comment
-      path: "/"
-      parameters:
-        post:
-          - { name: comment,            type: "string",   title: "Comment description", required: true }
-
 - title: Data Privacy
   entrypoint: dataPrivacy
   imports:
     - github.com/cortezaproject/corteza/server/pkg/filter
+    - github.com/cortezaproject/corteza/server/system/types
   path: "/data-privacy"
   apis:
     - name: connection list
@@ -2256,6 +2282,64 @@ endpoints:
             required: false
             title: Exclude (0, default), include (1) or return only (2) deleted connections
             type: filter.State
+
+    - name: request list
+      method: GET
+      title: List data privacy requests
+      path: "/requests/"
+      parameters:
+        get:
+          - { name: requestedBy,        type: "[]string",   title: "Filter by user ID" }
+          - { name: query,              type: "string",     title: "Filter requests" }
+          - { name: kind,               type: "[]string",   title: "Filter by kind: correct, delete, export" }
+          - { name: status,             type: "[]string",   title: "Filter by status: pending, cancel, approve, reject" }
+          - { name: limit,              type: "uint",       title: "Limit" }
+          - { name: pageCursor,         type: "string",     title: "Page cursor" }
+          - { name: sort,               type: "string",     title: "Sort items" }
+    - name: request create
+      method: POST
+      title: Create data privacy request
+      path: "/requests/"
+      parameters:
+        post:
+          - { name: kind,         type: "string",   title: "Request Kind", required: true }
+          - { name: payload,      type: "types.DataPrivacyRequestPayloadSet", title: Request, required: false, parser: types.ParseDataPrivacyRequestPayload }
+    - name: request read
+      method: GET
+      title: Get details about specific request
+      path: "/requests/{requestID}"
+      parameters:
+        path:
+          - { name: requestID, type: "uint64",     title: "Request ID", required: true }
+    - name: request update status
+      method: PATCH
+      title: Update data privacy request status
+      path: "/requests/{requestID}/status/{status}"
+      parameters:
+        path:
+          - { name: requestID,     type: "uint64",   title: "ID",             required: true }
+          - { name: status,        type: "string",   title: "Request Status", required: true }
+
+    - name: request comment list
+      method: GET
+      title: List data privacy request comments
+      path: "/requests/{requestID}/comments/"
+      parameters:
+        path:
+          - { name: requestID,          type: "uint64",     title: "Request ID", required: true }
+        get:
+          - { name: limit,              type: "uint",       title: "Limit" }
+          - { name: pageCursor,         type: "string",     title: "Page cursor" }
+          - { name: sort,               type: "string",     title: "Sort items" }
+    - name: request comment create
+      method: POST
+      title: Create data privacy request comment
+      path: "/requests/{requestID}/comments/"
+      parameters:
+        path:
+          - { name: requestID, type: "uint64",     title: "Request ID",           required: true }
+        post:
+          - { name: comment,   type: "string",     title: "Comment description",  required: true }
 
 - title: SMTP Configuration Checker
   entrypoint: smtpConfigurationChecker

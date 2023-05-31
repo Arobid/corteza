@@ -226,11 +226,13 @@
           v-model="add.roleID"
           :data-test-id="`select-${add.mode}-roles`"
           :options="availableRoles"
+          :get-option-key="getOptionRoleKey"
           :multiple="add.mode === 'eval'"
           label="name"
           clearable
           :disabled="add.mode === 'eval' && !!add.userID"
           :placeholder="$t('ui.add.role.placeholder')"
+          :calculate-position="calculateDropdownPosition"
           class="bg-white"
         />
       </b-form-group>
@@ -246,11 +248,13 @@
           v-model="add.userID"
           :data-test-id="`select-${add.mode}-users`"
           :disabled="!!add.roleID.length"
+          :get-option-key="getOptionUserKey"
           :options="userOptions"
           :get-option-label="getUserLabel"
           label="name"
           clearable
           :placeholder="$t('ui.add.user.placeholder')"
+          :calculate-position="calculateDropdownPosition"
           class="bg-white"
           @search="searchUsers"
         />
@@ -493,6 +497,14 @@ export default {
     onHideRole (role) {
       this.$emit('hide', role)
     },
+
+    getOptionRoleKey ({ roleID }) {
+      return roleID
+    },
+
+    getOptionUserKey ({ userID }) {
+      return userID
+    },
   },
 }
 </script>
@@ -504,7 +516,7 @@ export default {
   cursor: not-allowed;
 }
 .active-cell:hover {
-  background-color: #F3F3F5;
+  background-color: $gray-200;
 }
 .rotate {
   transform: rotate(45deg);
@@ -519,7 +531,7 @@ export default {
 <style lang="scss">
 .mode {
   .btn {
-    background-color: #E4E9EF;
+    background-color: $light;
     border: none;
   }
 

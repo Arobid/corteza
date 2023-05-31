@@ -1,5 +1,5 @@
 <template>
-  <div class="inline">
+  <div class="inline h-100">
     <img
       ref="image"
       :key="src"
@@ -25,12 +25,11 @@ export default {
 
   props: {
     alt: {
-      required: false,
       type: String,
       default: null,
     },
+
     title: {
-      required: false,
       type: String,
       default: null,
     },
@@ -81,6 +80,7 @@ export default {
 <style scoped lang="scss">
 div {
   object-fit: contain;
+
   img {
     &.loaded {
       width: auto;
@@ -88,8 +88,9 @@ div {
       display: block;
     }
   }
+
   &.inline {
-    img {
+    img:not(.disable-zoom-cursor) {
       cursor: zoom-in;
     }
   }

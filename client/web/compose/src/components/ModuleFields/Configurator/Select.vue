@@ -4,75 +4,107 @@
       <b-form-group
         :label="$t('kind.select.optionsLabel')"
       >
-        <b-input-group
-          v-for="(option, index) in f.options.options"
-          :key="index"
-          class="mb-1"
+        <b-table-simple
+          borderless
+          small
+          responsive="lg"
         >
-          <b-form-input
-            v-model.trim="f.options.options[index].value"
-            plain
-            size="sm"
-            :placeholder="$t('kind.select.optionValuePlaceholder')"
-          />
+          <b-thead>
+            <b-tr>
+              <b-th />
 
-          <b-form-input
-            v-model.trim="f.options.options[index].text"
-            plain
-            size="sm"
-            :placeholder="$t('kind.select.optionLabelPlaceholder')"
-          />
+              <b-th
+                class="text-primary"
+              >
+                {{ $t('kind.select.optionValuePlaceholder') }}
+              </b-th>
 
-          <b-input-group-append>
-            <field-select-translator
-              v-if="field"
-              :field="field"
-              :module="module"
-              :highlight-key="`meta.options.${option.value}.text`"
-              size="sm"
-              :disabled="isNew || option.new"
-              button-variant="light"
-            />
-            <b-button
-              variant="outline-danger"
-              class="border-0"
-              @click.prevent="f.options.options.splice(index, 1)"
+              <b-th
+                class="text-primary"
+              >
+                {{ $t('kind.select.optionLabelPlaceholder') }}
+              </b-th>
+
+              <b-th />
+            </b-tr>
+          </b-thead>
+
+          <draggable
+            v-model="f.options.options"
+            group="sort"
+            handle=".grab"
+            tag="tbody"
+          >
+            <b-tr
+              v-for="(option, index) in f.options.options"
+              :key="index"
             >
-              <font-awesome-icon :icon="['far', 'trash-alt']" />
-            </b-button>
-          </b-input-group-append>
-        </b-input-group>
+              <b-td class="d-flex align-items-center justify-content-center">
+                <font-awesome-icon
+                  :icon="['fas', 'bars']"
+                  class="grab text-light"
+                />
+              </b-td>
+              <b-td
+                style="min-width: 200px;"
+              >
+                <b-form-input
+                  v-model.trim="f.options.options[index].value"
+                  plain
+                  size="sm"
+                  :placeholder="$t('kind.select.optionValuePlaceholder')"
+                />
+              </b-td>
+              <b-td
+                style="min-width: 200px;"
+              >
+                <b-input-group>
+                  <b-form-input
+                    v-model.trim="f.options.options[index].text"
+                    plain
+                    size="sm"
+                    :placeholder="$t('kind.select.optionLabelPlaceholder')"
+                  />
 
-        <b-input-group>
-          <b-form-input
-            v-model.trim="newOption.value"
-            plain
-            size="sm"
-            :placeholder="$t('kind.select.optionValuePlaceholder')"
-            :state="newOptState"
-            @keypress.enter.prevent="handleAddOption"
-          />
+                  <b-input-group-append>
+                    <field-select-translator
+                      v-if="field"
+                      :field="field"
+                      :module="module"
+                      :highlight-key="`meta.options.${option.value}.text`"
+                      size="sm"
+                      :disabled="isNew || option.new"
+                      button-variant="light"
+                    />
+                  </b-input-group-append>
+                </b-input-group>
+              </b-td>
 
-          <b-form-input
-            v-model.trim="newOption.text"
-            plain
-            size="sm"
-            :placeholder="$t('kind.select.optionLabelPlaceholder')"
-            :state="newOptState"
-            @keypress.enter.prevent="handleAddOption"
-          />
+              <b-td class="d-flex align-items-center justify-content-center">
+                <b-button
+                  variant="outline-danger"
+                  class="border-0"
+                  @click.prevent="f.options.options.splice(index, 1)"
+                >
+                  <font-awesome-icon :icon="['far', 'trash-alt']" />
+                </b-button>
+              </b-td>
+            </b-tr>
 
-          <b-input-group-append>
-            <b-button
-              variant="primary"
-              size="sm"
-              :disabled="newOptState === false || newEmpty"
-              @click.prevent="handleAddOption"
-            >
-              + {{ $t('kind.select.optionAdd') }}
-            </b-button>
-          </b-input-group-append>
-        </b-input-group>
+            <b-tr>
+              <b-td />
+              <b-td>
+                <b-button
+                  variant="primary px-3"
+                  size="md"
+                  @click.prevent="handleAddOption"
+                >
+                  + {{ $t('kind.select.optionAdd') }}
+                </b-button>
+              </b-td>
+            </b-tr>
+          </draggable>
+        </b-table-simple>
       </b-form-group>
 
       <b-form-group
@@ -83,7 +115,17 @@
           v-model="f.options.selectType"
           :options="selectOptions"
           stacked
+          @change="onUpdateIsUniqueMultiValue"
         />
+        <b-form-checkbox
+          v-if="f.options.selectType !== 'multiple'"
+          v-model="f.options.isUniqueMultiValue"
+          :value="false"
+          :unchecked-value="true"
+          class="mt-2"
+        >
+          {{ $t('kind.select.allow-duplicates') }}
+        </b-form-checkbox>
       </b-form-group>
     </b-col>
   </b-row>
@@ -91,6 +133,7 @@
 
 <script>
 import base from './base'
+import Draggable from 'vuedraggable'
 import { NoID } from '@cortezaproject/corteza-js'
 import FieldSelectTranslator from 'corteza-webapp-compose/src/components/Admin/Module/FieldSelectTranslator'
 
@@ -101,6 +144,7 @@ export default {
 
   components: {
     FieldSelectTranslator,
+    Draggable,
   },
 
   extends: base,
@@ -152,9 +196,16 @@ export default {
 
   methods: {
     handleAddOption () {
-      if (this.newOption.value) {
-        this.f.options.options.push(this.newOption)
-        this.newOption = { value: undefined, text: undefined, new: true }
+      this.f.options.options.push({
+        value: undefined,
+        text: undefined,
+        new: true,
+      })
+    },
+
+    onUpdateIsUniqueMultiValue () {
+      if (this.f.options.selectType === 'multiple') {
+        this.f.options.isUniqueMultiValue = true
       }
     },
   },

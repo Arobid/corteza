@@ -5,6 +5,7 @@
     :ok-title="$t('general.label.saveAndClose')"
     ok-only
     ok-variant="primary"
+    scrollable
     size="lg"
     body-class="p-0 border-top-0"
     header-class="p-3 pb-0 border-bottom-0"
@@ -13,7 +14,6 @@
     <b-tabs
       v-if="modal"
       v-model="currentTabIndex"
-      active-nav-item-class="bg-grey"
       nav-wrapper-class="bg-white border-bottom"
       card
     >
@@ -27,7 +27,7 @@
           :module="module"
           :fields.sync="currentFields"
           disable-system-fields
-          style="max-height: 70vh;"
+          style="height: 70vh;"
         />
       </b-tab>
     </b-tabs>
@@ -121,9 +121,9 @@ export default {
 
     scopeOptions () {
       return [
-        { value: 'public', title: this.$t('edit.discoverySettings.public') },
+        // { value: 'public', title: this.$t('edit.discoverySettings.public') },
         { value: 'private', title: this.$t('edit.discoverySettings.private') },
-        { value: 'protected', title: this.$t('edit.discoverySettings.protected') },
+        // { value: 'protected', title: this.$t('edit.discoverySettings.protected') },
       ]
     },
   },
@@ -143,10 +143,10 @@ export default {
             this.languages.forEach(({ tag: lang }) => {
               let existingFields = new Set()
 
-              if (this.module.meta.discovery && this.module.meta.discovery[value]) {
-                const indexOfLanguage = this.module.meta.discovery[value].result.findIndex(r => r.lang === lang)
+              if (this.module.config.discovery && this.module.config.discovery[value]) {
+                const indexOfLanguage = this.module.config.discovery[value].result.findIndex(r => r.lang === lang)
                 if (indexOfLanguage >= 0) {
-                  existingFields = new Set(this.module.meta.discovery[value].result[indexOfLanguage].fields.filter(name => this.moduleFields.has(name)))
+                  existingFields = new Set(this.module.config.discovery[value].result[indexOfLanguage].fields.filter(name => this.moduleFields.has(name)))
                 }
               }
 

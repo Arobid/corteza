@@ -366,6 +366,28 @@ export default class System {
     return `/auth/clients/${clientID}/secret`
   }
 
+  // Evaluate expressions
+  async expressionEvaluate (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      variables,
+      expressions,
+    } = (a as KV) || {}
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'post',
+      url: this.expressionEvaluateEndpoint(),
+    }
+    cfg.data = {
+      variables,
+      expressions,
+    }
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  expressionEvaluateEndpoint (): string {
+    return '/expressions/evaluate'
+  }
+
   // List settings
   async settingsList (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
     const {
@@ -533,6 +555,9 @@ export default class System {
       meta,
       labels,
     } = (a as KV) || {}
+    if (!name) {
+      throw Error('field name is empty')
+    }
     const cfg: AxiosRequestConfig = {
       ...extra,
       method: 'post',
@@ -1453,6 +1478,96 @@ export default class System {
     return `/users/${userID}/credentials/${credentialsID}`
   }
 
+  // User&#x27;s profile avatar
+  async userProfileAvatar (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      userID,
+      upload,
+      width,
+      height,
+    } = (a as KV) || {}
+    if (!userID) {
+      throw Error('field userID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'post',
+      url: this.userProfileAvatarEndpoint({
+        userID,
+      }),
+    }
+    cfg.data = {
+      upload,
+      width,
+      height,
+    }
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  userProfileAvatarEndpoint (a: KV): string {
+    const {
+      userID,
+    } = a || {}
+    return `/users/${userID}/avatar`
+  }
+
+  // User profile avatar initial
+  async userProfileAvatarInitial (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      userID,
+      avatarColor,
+      avatarBgColor,
+    } = (a as KV) || {}
+    if (!userID) {
+      throw Error('field userID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'post',
+      url: this.userProfileAvatarInitialEndpoint({
+        userID,
+      }),
+    }
+    cfg.data = {
+      avatarColor,
+      avatarBgColor,
+    }
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  userProfileAvatarInitialEndpoint (a: KV): string {
+    const {
+      userID,
+    } = a || {}
+    return `/users/${userID}/avatar-initial`
+  }
+
+  // delete user&#x27;s profile avatar
+  async userDeleteAvatar (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      userID,
+    } = (a as KV) || {}
+    if (!userID) {
+      throw Error('field userID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'delete',
+      url: this.userDeleteAvatarEndpoint({
+        userID,
+      }),
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  userDeleteAvatarEndpoint (a: KV): string {
+    const {
+      userID,
+    } = a || {}
+    return `/users/${userID}/avatar`
+  }
+
   // Export users
   async userExport (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
     const {
@@ -1556,9 +1671,6 @@ export default class System {
       level,
       meta,
     } = (a as KV) || {}
-    if (!handle) {
-      throw Error('field handle is empty')
-    }
     if (!level) {
       throw Error('field level is empty')
     }
@@ -1592,9 +1704,6 @@ export default class System {
     } = (a as KV) || {}
     if (!sensitivityLevelID) {
       throw Error('field sensitivityLevelID is empty')
-    }
-    if (!handle) {
-      throw Error('field handle is empty')
     }
     if (!level) {
       throw Error('field level is empty')
@@ -2576,6 +2685,32 @@ export default class System {
       reminderID,
     } = a || {}
     return `/reminder/${reminderID}/dismiss`
+  }
+
+  // Undismiss reminder
+  async reminderUndismiss (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      reminderID,
+    } = (a as KV) || {}
+    if (!reminderID) {
+      throw Error('field reminderID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'patch',
+      url: this.reminderUndismissEndpoint({
+        reminderID,
+      }),
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  reminderUndismissEndpoint (a: KV): string {
+    const {
+      reminderID,
+    } = a || {}
+    return `/reminder/${reminderID}/undismiss`
   }
 
   // Snooze reminder
@@ -4070,6 +4205,48 @@ export default class System {
     return `/apigw/profiler/hit/${hitID}`
   }
 
+  // Purge all profiler hits
+  async apigwProfilerPurgeAll (extra: AxiosRequestConfig = {}): Promise<KV> {
+
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'post',
+      url: this.apigwProfilerPurgeAllEndpoint(),
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  apigwProfilerPurgeAllEndpoint (): string {
+    return '/apigw/profiler/purge'
+  }
+
+  // Purge route profiler hits
+  async apigwProfilerPurge (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      routeID,
+    } = (a as KV) || {}
+    if (!routeID) {
+      throw Error('field routeID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'post',
+      url: this.apigwProfilerPurgeEndpoint({
+        routeID,
+      }),
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  apigwProfilerPurgeEndpoint (a: KV): string {
+    const {
+      routeID,
+    } = a || {}
+    return `/apigw/profiler/purge/${routeID}`
+  }
+
   // List resources translations
   async localeListResource (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
     const {
@@ -4311,6 +4488,33 @@ export default class System {
     return `/locale/${lang}/${application}`
   }
 
+  // List connections for data privacy
+  async dataPrivacyConnectionList (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      connectionID,
+      handle,
+      type,
+      deleted,
+    } = (a as KV) || {}
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'get',
+      url: this.dataPrivacyConnectionListEndpoint(),
+    }
+    cfg.params = {
+      connectionID,
+      handle,
+      type,
+      deleted,
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  dataPrivacyConnectionListEndpoint (): string {
+    return '/data-privacy/connection/'
+  }
+
   // List data privacy requests
   async dataPrivacyRequestList (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
     const {
@@ -4369,6 +4573,32 @@ export default class System {
     return '/data-privacy/requests/'
   }
 
+  // Get details about specific request
+  async dataPrivacyRequestRead (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
+    const {
+      requestID,
+    } = (a as KV) || {}
+    if (!requestID) {
+      throw Error('field requestID is empty')
+    }
+    const cfg: AxiosRequestConfig = {
+      ...extra,
+      method: 'get',
+      url: this.dataPrivacyRequestReadEndpoint({
+        requestID,
+      }),
+    }
+
+    return this.api().request(cfg).then(result => stdResolve(result))
+  }
+
+  dataPrivacyRequestReadEndpoint (a: KV): string {
+    const {
+      requestID,
+    } = a || {}
+    return `/data-privacy/requests/${requestID}`
+  }
+
   // Update data privacy request status
   async dataPrivacyRequestUpdateStatus (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
     const {
@@ -4398,32 +4628,6 @@ export default class System {
       status,
     } = a || {}
     return `/data-privacy/requests/${requestID}/status/${status}`
-  }
-
-  // Get details about specific request
-  async dataPrivacyRequestRead (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
-    const {
-      requestID,
-    } = (a as KV) || {}
-    if (!requestID) {
-      throw Error('field requestID is empty')
-    }
-    const cfg: AxiosRequestConfig = {
-      ...extra,
-      method: 'get',
-      url: this.dataPrivacyRequestReadEndpoint({
-        requestID,
-      }),
-    }
-
-    return this.api().request(cfg).then(result => stdResolve(result))
-  }
-
-  dataPrivacyRequestReadEndpoint (a: KV): string {
-    const {
-      requestID,
-    } = a || {}
-    return `/data-privacy/requests/${requestID}`
   }
 
   // List data privacy request comments
@@ -4490,33 +4694,6 @@ export default class System {
       requestID,
     } = a || {}
     return `/data-privacy/requests/${requestID}/comments/`
-  }
-
-  // List connections for data privacy
-  async dataPrivacyConnectionList (a: KV, extra: AxiosRequestConfig = {}): Promise<KV> {
-    const {
-      connectionID,
-      handle,
-      type,
-      deleted,
-    } = (a as KV) || {}
-    const cfg: AxiosRequestConfig = {
-      ...extra,
-      method: 'get',
-      url: this.dataPrivacyConnectionListEndpoint(),
-    }
-    cfg.params = {
-      connectionID,
-      handle,
-      type,
-      deleted,
-    }
-
-    return this.api().request(cfg).then(result => stdResolve(result))
-  }
-
-  dataPrivacyConnectionListEndpoint (): string {
-    return '/data-privacy/connection/'
   }
 
   // Check SMTP server configuration settings

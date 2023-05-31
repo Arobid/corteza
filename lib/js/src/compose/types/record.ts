@@ -84,6 +84,7 @@ export class Record {
   public canUpdateRecord = false;
   public canReadRecord = false;
   public canDeleteRecord = false;
+  public canUndeleteRecord = false;
   public canManageOwnerOnRecord = false;
   public canSearchRevision = false;
   public canGrant = false;
@@ -115,7 +116,7 @@ export class Record {
   }
 
   clone (): Record {
-    return new Record(JSON.parse(JSON.stringify(this)))
+    return new Record(this.module, JSON.parse(JSON.stringify(this)))
   }
 
   /**
@@ -174,6 +175,7 @@ export class Record {
       'canUpdateRecord',
       'canReadRecord',
       'canDeleteRecord',
+      'canUndeleteRecord',
       'canManageOwnerOnRecord',
       'canGrant',
     )
@@ -418,6 +420,12 @@ export class Record {
     // Update with first item or set to undefined
     this.values[name] = value
   }
+
+  public serialize (): Partial<Record> {
+    const { toJSON, ...values } = this.values
+    return { ...this, values }
+  }
+
 
   /**
    * Returns resource ID

@@ -1,6 +1,6 @@
 <template>
   <b-modal
-    v-model="showBlockModal"
+    v-model="showModal"
     scrollable
     body-class="card p-0"
     footer-class="p-0"
@@ -12,8 +12,12 @@
     @hidden="hideModal"
   >
     <page-block
-      v-if="showBlockModal"
+      v-if="showModal"
       :block="block"
+      :blocks="page.blocks"
+      :module="module"
+      :record="record"
+      :page="page"
       v-bind="$props"
       v-on="$listeners"
     />
@@ -21,7 +25,8 @@
 </template>
 
 <script>
-import { compose } from '@cortezaproject/corteza-js'
+import { mapGetters } from 'vuex'
+import { compose, NoID } from '@cortezaproject/corteza-js'
 import PageBlock from 'corteza-webapp-compose/src/components/PageBlocks'
 
 export default {
@@ -40,27 +45,33 @@ export default {
       type: compose.Namespace,
       required: true,
     },
-
-    page: {
-      type: compose.Page,
-      required: true,
-    },
   },
 
   data () {
     return {
-      showBlockModal: false,
+      showModal: false,
       block: undefined,
+      record: undefined,
+      page: undefined,
+
+      // Used if you want to display a specific block in the modal
+      // Otherwise its retrieved based on the page and blockID
+      customBlock: undefined,
     }
   },
 
   computed: {
+    ...mapGetters({
+      getPageByID: 'page/getByID',
+      getModuleByID: 'module/getByID',
+    }),
+
     dialogClass () {
-      return this.block && this.block.options.magnifyOption === 'fullscreen' ? 'h-100 mw-100 m-0 mh-100' : 'h-100'
+      return this.block && this.block.options.magnifyOption === 'fullscreen' ? 'h-100 mw-100 m-0 mh-100' : 'h-100 mw-90'
     },
 
     contentClass () {
-      return this.block && this.block.options.magnifyOption === 'fullscreen' ? 'mh-100' : ''
+      return `${this.block && this.block.options.magnifyOption === 'fullscreen' ? 'mh-100 rounded-0' : 'card'} position-initial`
     },
   },
 
@@ -68,40 +79,88 @@ export default {
     '$route.query.blockID': {
       immediate: true,
       handler (blockID, oldBlockID) {
-        if (blockID && !oldBlockID) {
-          this.showModal(blockID)
-        } else if (!blockID && oldBlockID) {
-          this.hideModal()
+        if (!blockID) {
+          this.showModal = false
+          return
         }
+
+        if (this.showModal && (blockID !== oldBlockID)) {
+          this.showModal = false
+
+          setTimeout(() => {
+            this.$router.push({ query: { ...this.$route.query, blockID } })
+          }, 300)
+
+          return
+        }
+
+        setTimeout(() => {
+          this.loadModal(blockID)
+        }, 100)
       },
     },
   },
 
   created () {
-    this.$root.$on('magnify-page-block', this.showModal)
+    this.$root.$on('magnify-page-block', this.magnifyPageBlock)
   },
 
-  beforeDestroy () {
-    this.$root.$off('magnify-page-block')
+  destroyed () {
+    this.$root.$off('magnify-page-block', this.magnifyPageBlock)
   },
 
   methods: {
-    showModal (blockID) {
-      if (blockID) {
-        this.block = this.page.blocks.find(block => block.blockID === blockID)
-        this.showBlockModal = true
-        this.$router.push({ query: { blockID } })
-      } else {
-        this.hideModal()
+    magnifyPageBlock ({ blockID, block } = {}) {
+      this.customBlock = block
+      blockID = blockID || (block || {}).blockID
+      this.$router.push({ query: { ...this.$route.query, blockID } })
+    },
+
+    loadModal (blockID) {
+      // Get data from route
+      const { recordID: paramsRecordID, pageID } = this.$route.params
+      const { recordID: queryRecordID, recordPageID } = this.$route.query
+
+      // Get page that we should display
+      this.page = this.getPageByID(recordPageID || pageID)
+
+      if (!this.page) {
+        return
       }
+
+      const { namespaceID, moduleID } = this.page
+      const recordID = paramsRecordID || queryRecordID
+      this.block = this.customBlock || this.page.blocks.find(block => block.blockID === blockID)
+      this.module = moduleID !== NoID ? this.getModuleByID(moduleID) : undefined
+
+      if (recordID) {
+        this.$ComposeAPI
+          .recordRead({ namespaceID, moduleID, recordID })
+          .then(record => {
+            this.record = new compose.Record(this.module, record)
+          })
+          .catch(this.toastErrorHandler(this.$t('notification:record.loadFailed')))
+      } else if (this.module) {
+        this.record = new compose.Record(this.module, {})
+      }
+
+      this.showModal = !!(this.block || {}).blockID
     },
 
     hideModal () {
-      this.showBlockModal = false
-      this.$router.push({ query: {} })
-      this.block = undefined
+      this.$router.push({ query: { ...this.$route.query, blockID: undefined } })
     },
   },
 }
 
 </script>
+
+<style lang="scss">
+.position-initial {
+  position: initial;
+}
+
+.mw-90 {
+  max-width: 90vw;
+}
+</style>

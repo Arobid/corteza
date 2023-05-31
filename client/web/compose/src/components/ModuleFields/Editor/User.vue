@@ -21,6 +21,7 @@
           :text="hint"
         />
       </div>
+
       <small
         class="text-muted"
       >
@@ -44,7 +45,7 @@
           :get-option-label="getOptionLabel"
           :get-option-key="getOptionKey"
           :append-to-body="appendToBody"
-          :calculate-position="calculatePosition"
+          :calculate-position="calculateDropdownPosition"
           :clearable="false"
           :filterable="false"
           :selectable="option => option.selectable"
@@ -70,7 +71,7 @@
           :get-option-label="getOptionLabel"
           :get-option-key="getOptionKey"
           :append-to-body="appendToBody"
-          :calculate-position="calculatePosition"
+          :calculate-position="calculateDropdownPosition"
           :filterable="false"
           :selectable="option => option.selectable"
           :loading="processing"
@@ -97,7 +98,7 @@
           :get-option-key="getOptionKey"
           :value="getUserByIndex(ctx.index)"
           :append-to-body="appendToBody"
-          :calculate-position="calculatePosition"
+          :calculate-position="calculateDropdownPosition"
           :clearable="false"
           :filterable="false"
           :selectable="option => option.selectable"
@@ -128,7 +129,7 @@
         :get-option-key="getOptionKey"
         :value="getUserByIndex()"
         :append-to-body="appendToBody"
-        :calculate-position="calculatePosition"
+        :calculate-position="calculateDropdownPosition"
         :filterable="false"
         :selectable="option => option.selectable"
         :loading="processing"
@@ -154,7 +155,6 @@ import { debounce } from 'lodash'
 import base from './base'
 import { VueSelect } from 'vue-select'
 import { mapActions, mapGetters } from 'vuex'
-import calculatePosition from 'corteza-webapp-compose/src/mixins/vue-select-position'
 import Pagination from '../Common/Pagination.vue'
 
 export default {
@@ -168,10 +168,6 @@ export default {
   },
 
   extends: base,
-
-  mixins: [
-    calculatePosition,
-  ],
 
   data () {
     return {
@@ -198,7 +194,12 @@ export default {
 
     options () {
       return this.users.map(u => {
-        return { ...u, selectable: this.field.isMulti ? !(this.value || []).includes(u.userID) : this.value !== u.userID }
+        return {
+          ...u,
+          selectable: this.field.isMulti && !this.field.options.isUniqueMultiValue
+            ? this.value !== u.userID
+            : !(this.value || []).includes(u.userID),
+        }
       })
     },
 
@@ -293,7 +294,7 @@ export default {
         // update list of resolved users for every item we add
         this.addUserToResolved({ ...user })
 
-        // update valie on record
+        // update value on record
         const { userID } = user
         if (this.field.isMulti) {
           if (index >= 0) {

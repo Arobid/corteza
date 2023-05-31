@@ -2,11 +2,11 @@
   <wrap
     v-bind="$props"
     v-on="$listeners"
-    @refreshBlock="key++"
+    @refreshBlock="refresh"
   >
     <div
       v-if="profile"
-      class="px-3 h-100"
+      class="p-2 h-100"
     >
       <timeline
         v-if="isTwitter"
@@ -56,8 +56,17 @@ export default {
     },
   },
 
+  watch: {
+    options: {
+      deep: true,
+      handler () {
+        this.refresh()
+      },
+    },
+  },
+
   mounted () {
-    this.refreshBlock(() => {}, true)
+    this.refreshBlock(this.refresh)
   },
 
   methods: {
@@ -88,7 +97,8 @@ export default {
       }
 
       // is this a twitter url?
-      if (url && url.indexOf('twitter.com')) {
+      if (url && url.indexOf('twitter.com') > -1) {
+        url = this.$options.filters.checkValidURL(url)
         twitterHandle = this.getTwitterHandle(url)
         if (twitterHandle === '') {
           // failed to get twitter handle from the url
@@ -108,6 +118,10 @@ export default {
         socialNetwork,
         twitterHandle,
       }
+    },
+
+    refresh () {
+      this.key++
     },
   },
 }

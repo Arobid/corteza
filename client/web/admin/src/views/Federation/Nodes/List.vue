@@ -1,6 +1,6 @@
 <template>
   <b-container
-    class="py-3"
+    fluid="xl"
   >
     <c-content-header
       :title="$t('title')"
@@ -40,7 +40,9 @@
         prevPagination: $t('admin:general.pagination.prev'),
         nextPagination: $t('admin:general.pagination.next'),
       }"
+      sticky-header
       hide-total
+      class="custom-resource-list-height"
       @search="filterList"
     >
       <template #actions="{ item }">

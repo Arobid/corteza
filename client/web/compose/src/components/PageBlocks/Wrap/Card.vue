@@ -2,12 +2,12 @@
   <div class="h-100">
     <b-card
       no-body
-      class="h-100 border-0 shadow"
-      :class="blockClass"
+      class="d-flex flex-column h-100 shadow overflow-hidden"
+      :class="[blockClass, cardClass]"
     >
       <b-card-header
-        v-if="headerSet || block.title || block.description || hasMagnifyIcon || block.options.refreshRate >= 5"
-        class="border-0 text-nowrap px-3"
+        v-if="showHeader"
+        class="border-0 text-nowrap pl-3 pr-2 mr-1"
         header-bg-variant="white"
         :header-text-variant="block.style.variants.headerText"
       >
@@ -24,32 +24,36 @@
               <slot name="title-badge" />
             </h5>
 
-            <div
-              v-if="block.options.refreshRate >= 5 || hasMagnifyIcon"
+            <b-button-group
+              v-if="showOptions"
+              size="sm"
               class="ml-auto"
             >
-              <font-awesome-icon
-                v-if="block.options.refreshRate >= 5"
-                :icon="['fa', 'sync']"
-                class="h6 text-secondary"
-                role="button"
+              <b-button
+                v-if="block.options.showRefresh"
+                :title="$t('general.label.refresh')"
+                variant="outline-light"
+                class="d-flex align-items-center text-secondary d-print-none border-0"
                 @click="$emit('refreshBlock')"
-              />
+              >
+                <font-awesome-icon :icon="['fa', 'sync']" />
+              </b-button>
 
-              <font-awesome-icon
-                v-if="hasMagnifyIcon"
-                :icon="['fas', isBlockOpened ? 'times' : 'search-plus']"
-                :title="$t(isBlockOpened ? '' : 'general.label.magnify')"
-                class="h6 text-secondary ml-2"
-                role="button"
-                @click="$root.$emit('magnify-page-block', isBlockOpened ? undefined : block.blockID)"
-              />
-            </div>
+              <b-button
+                v-if="block.options.magnifyOption"
+                :title="isBlockOpened ? '' : $t('general.label.magnify')"
+                variant="outline-light"
+                class="d-flex align-items-center text-secondary d-print-none border-0"
+                @click="$root.$emit('magnify-page-block', isBlockOpened ? undefined : { blockID: block.blockID })"
+              >
+                <font-awesome-icon :icon="['fas', isBlockOpened ? 'times' : 'search-plus']" />
+              </b-button>
+            </b-button-group>
           </div>
 
           <b-card-text
             v-if="block.description"
-            class="text-dark text-truncate mt-1"
+            class="text-dark text-wrap mt-1"
           >
             {{ block.description }}
           </b-card-text>
@@ -63,7 +67,6 @@
 
       <div
         v-if="toolbarSet"
-        class="overflow-hidden"
       >
         <slot
           name="toolbar"
@@ -71,9 +74,8 @@
       </div>
 
       <b-card-body
-        class="p-0"
+        class="p-0 flex-fill"
         :class="{ 'overflow-auto': scrollableBody }"
-        style="flex-shrink: 10;"
       >
         <slot
           name="default"
@@ -82,7 +84,7 @@
 
       <b-card-footer
         v-if="footerSet"
-        class="p-0 overflow-hidden"
+        class="p-0 bg-white border-top"
       >
         <slot
           name="footer"
@@ -92,49 +94,9 @@
   </div>
 </template>
 <script>
-import { compose } from '@cortezaproject/corteza-js'
-
+import base from './base.vue'
 export default {
-  props: {
-    block: {
-      type: compose.PageBlock,
-      required: true,
-    },
-
-    scrollableBody: {
-      type: Boolean,
-      required: false,
-      default: () => true,
-    },
-  },
-
-  computed: {
-    blockClass () {
-      return [
-        'block',
-        this.block.kind,
-      ]
-    },
-
-    hasMagnifyIcon () {
-      return this.block.options.magnifyOption
-    },
-
-    isBlockOpened () {
-      return this.block.blockID === this.$route.query.blockID
-    },
-
-    headerSet () {
-      return !!this.$scopedSlots.header
-    },
-
-    toolbarSet () {
-      return !!this.$scopedSlots.toolbar
-    },
-
-    footerSet () {
-      return !!this.$scopedSlots.footer
-    },
-  },
+  name: 'CardWrap',
+  extends: base,
 }
 </script>

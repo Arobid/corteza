@@ -11,6 +11,8 @@ export enum ChartType {
   doughnut='doughnut',
   funnel = 'funnel',
   gauge = 'gauge',
+  radar = 'radar',
+  scatter = 'scatter',
 }
 
 export interface TemporalDataPoint {
@@ -30,7 +32,7 @@ export interface Dimension {
   default?: string;
   skipMissing?: boolean;
   autoSkip?: boolean;
-  rotateLabel?: string;
+  rotateLabel?: number;
 }
 
 export interface Metric {
@@ -45,6 +47,7 @@ export interface Metric {
   modifier?: string;
   fx?: string;
   backgroundColor?: string;
+  symbol?: string;
   [_: string]: any;
 }
 
@@ -56,7 +59,8 @@ export interface YAxis {
   labelPosition?: string;
   min?: string;
   max?: string;
-  rotateLabel?: string;
+  rotateLabel?: number;
+  horizontal?: boolean;
 }
 
 export interface ChartOffset {
@@ -100,9 +104,16 @@ export interface Report {
   offset?: ChartOffset;
 }
 
+interface ChartToolbox {
+  saveAsImage: boolean;
+  timeline: string;
+}
+
 export interface ChartConfig {
   reports?: Array<Report>;
   colorScheme?: string;
+  noAnimation?: boolean;
+  toolbox?: ChartToolbox
 }
 
 export const aggregateFunctions = [
@@ -132,7 +143,6 @@ interface DimensionFunction {
   text: string;
   value: string;
   convert: (f: string) => string;
-  time: boolean | object;
 }
 
 export class DimensionFunctions<T> extends Array<T> {
@@ -159,42 +169,42 @@ dimensionFunctions.push(...[
     text: 'none',
     value: '(no grouping / buckets)',
     convert: (f: string) => f,
-    time: false,
+  },
+
+  {
+    text: 'auto',
+    value: 'auto',
+    convert: (f: string) => f,
   },
 
   {
     text: 'date',
     value: 'DATE',
     convert: (f: string) => `DATE(${f})`,
-    time: { unit: 'day', minUnit: 'day', round: true },
   },
 
   {
     text: 'week',
     value: 'WEEK',
     convert: (f: string) => `WEEK(${f})`,
-    time: { unit: 'week', minUnit: 'week', round: true, isoWeekday: true },
   },
 
   {
     text: 'month',
     value: 'MONTH',
     convert: (f: string) => `DATE_FORMAT(${f}, '%Y-%m-01')`,
-    time: { unit: 'month', minUnit: 'month', round: true },
   },
 
   {
     text: 'quarter',
     value: 'QUARTER',
     convert: (f: string) => `QUARTER(${f})`,
-    time: { unit: 'quarter', minUnit: 'quarter', round: true },
   },
 
   {
     text: 'year',
     value: 'YEAR',
     convert: (f: string) => `DATE_FORMAT(${f}, '%Y-01-01')`,
-    time: { unit: 'year', minUnit: 'year', round: true },
   },
 ])
 

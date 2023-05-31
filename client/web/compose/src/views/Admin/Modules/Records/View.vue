@@ -76,20 +76,30 @@
         :processing="processing"
         :processing-submit="processingSubmit"
         :processing-delete="processingDelete"
-        :is-deleted="isDeleted"
+        :processing-undelete="processingUndelete"
         :in-editing="inEditing"
+        :record-navigation="recordNavigation"
+        :hide-back="false"
+        :hide-delete="false"
+        :hide-new="false"
+        :hide-clone="false"
+        :hide-edit="false"
+        :hide-submit="false"
         @add="handleAdd()"
         @clone="handleClone()"
         @edit="handleEdit()"
         @delete="handleDelete()"
+        @undelete="handleUndelete()"
         @back="handleBack()"
         @submit="handleFormSubmitSimple('admin.modules.record.view')"
+        @update-navigation="handleRedirectToPrevOrNext"
       />
     </portal>
   </div>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 import RecordToolbar from 'corteza-webapp-compose/src/components/Common/RecordToolbar'
 import users from 'corteza-webapp-compose/src/mixins/users'
 import record from 'corteza-webapp-compose/src/mixins/record'
@@ -131,6 +141,10 @@ export default {
   },
 
   computed: {
+    ...mapGetters({
+      getNextAndPrevRecord: 'ui/getNextAndPrevRecord',
+    }),
+
     title () {
       const { name, handle } = this.module
       return this.$t('allRecords.view.title', { name: name || handle, interpolation: { escapeValue: false } })
@@ -152,11 +166,10 @@ export default {
 
       const fields = []
       const fieldSetSize = 8
-      const moduleFields = this.module.fields.slice().sort((a, b) => a.label.localeCompare(b.label))
 
       let i, j
-      for (i = 0, j = moduleFields.length; i < j; i += fieldSetSize) {
-        fields.push(moduleFields.slice(i, i + fieldSetSize))
+      for (i = 0, j = this.module.fields.length; i < j; i += fieldSetSize) {
+        fields.push(this.module.fields.slice(i, i + fieldSetSize))
       }
 
       fields.push(this.module.systemFields())
@@ -187,6 +200,11 @@ export default {
 
       return undefined
     },
+
+    recordNavigation () {
+      const { recordID } = this.record || {}
+      return this.getNextAndPrevRecord(recordID)
+    },
   },
 
   watch: {
@@ -205,13 +223,11 @@ export default {
   methods: {
     createBlocks () {
       this.fields.forEach(f => {
-        const block = new compose.PageBlockRecord()
         const options = {
           moduleID: this.$attrs.moduleID,
           fields: f,
         }
-        block.options = options
-        this.blocks.push(block)
+        this.blocks.push(new compose.PageBlockRecord({ options }))
       })
     },
 
@@ -224,7 +240,6 @@ export default {
           .recordRead({ namespaceID, moduleID, recordID })
           .then(record => {
             this.record = new compose.Record(module, record)
-            this.fetchUsers(this.module.fields, [this.record])
           })
           .catch(this.toastErrorHandler(this.$t('notification:record.loadFailed')))
       }
@@ -244,6 +259,14 @@ export default {
 
     handleEdit () {
       this.$router.push({ name: 'admin.modules.record.edit', params: this.$route.params })
+    },
+
+    handleRedirectToPrevOrNext (recordID) {
+      if (!recordID) return
+
+      this.$router.push({
+        params: { ...this.$route.params, recordID },
+      })
     },
   },
 }

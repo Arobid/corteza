@@ -12,7 +12,6 @@
     @change="$emit('change', $event)"
   >
     <b-tabs
-      active-nav-item-class="bg-grey"
       nav-wrapper-class="bg-white border-bottom"
       active-tab-class="tab-content h-auto overflow-auto"
       card
@@ -416,7 +415,7 @@ export default {
         list[nodeID] = {}
 
         for (const sm of this.sharedModules[nodeID]) {
-          let f = sm.fields.sort((a, b) => a.label.localeCompare(b.label))
+          let f = [...sm.fields].sort((a, b) => a.label.localeCompare(b.label))
 
           // is there any mappings for this shared module?
           const mappedFields = ((this.moduleMappings[nodeID] || {})[sm.moduleID] || {}).fields || []

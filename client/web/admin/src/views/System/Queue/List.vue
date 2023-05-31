@@ -1,6 +1,6 @@
 <template>
   <b-container
-    class="py-3"
+    fluid="xl"
   >
     <c-content-header
       :title="$t('title')"
@@ -18,6 +18,7 @@
           {{ $t('new') }}
         </b-button>
       </span>
+
       <b-dropdown
         v-if="false"
         variant="link"
@@ -30,6 +31,7 @@
         </b-dropdown-item-button>
       </b-dropdown>
     </c-content-header>
+
     <c-resource-list
       :primary-key="primaryKey"
       :filter="filter"
@@ -47,7 +49,11 @@
         singlePluralPagination: 'admin:general.pagination.single',
         prevPagination: $t('admin:general.pagination.prev'),
         nextPagination: $t('admin:general.pagination.next'),
+        resourceSingle: $t('general:label.queue.single'),
+        resourcePlural: $t('general:label.queue.plural'),
       }"
+      sticky-header
+      class="custom-resource-list-height"
       @search="filterList"
     >
       <template #header>

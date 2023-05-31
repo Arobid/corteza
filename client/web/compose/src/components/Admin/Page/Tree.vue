@@ -6,7 +6,7 @@
       :data="{children:list}"
       tag="ul"
       mixin-parent-key="parent"
-      class="list-group pb-3"
+      class="list-group"
       @changePosition="handleChangePosition"
     >
       <template
@@ -45,57 +45,61 @@
             cols="12"
             xl="6"
             lg="7"
-            class="text-right pr-2"
+            class="text-right"
           >
-            <router-link
+            <b-button-group
               v-if="item.canUpdatePage"
-              data-test-id="button-page-builder"
-              :to="{name: 'admin.pages.builder', params: { pageID: item.pageID }}"
-              class="btn btn-light mr-2"
+              size="sm"
+              class="mr-1"
             >
-              {{ $t('block.general.label.pageBuilder') }}
-            </router-link>
-            <span class="view d-inline-block">
-              <router-link
-                v-if="!hideViewPageButton(item)"
-                data-test-id="button-page-view"
-                :to="pageViewer(item)"
-                class="btn"
+              <b-button
+                data-test-id="button-page-builder"
+                variant="primary"
+                size="sm"
+                :to="{name: 'admin.pages.builder', params: { pageID: item.pageID }}"
               >
-                {{ $t('view') }}
-              </router-link>
-            </span>
-            <span
-              class="d-none d-md-inline-block edit text-left"
-            >
-              <router-link
-                v-if="item.moduleID !== '0'"
-                v-b-tooltip.hover.top
-                data-test-id="button-module-edit"
-                :title="moduleName(item)"
-                class="btn text-primary"
-                :to="{ name: 'admin.modules.edit', params: { moduleID: item.moduleID }}"
-              >
-                {{ $t('moduleEdit') }}
-              </router-link>
-              <router-link
-                v-if="item.canUpdatePage && item.moduleID === '0'"
-                :to="{name: 'admin.pages.edit', params: { pageID: item.pageID }}"
-                data-test-id="button-page-edit"
-                class="btn text-primary"
-              >
-                {{ $t('edit.edit') }}
-              </router-link>
+                {{ $t('block.general.label.pageBuilder') }}
+                <font-awesome-icon
+                  :icon="['fas', 'tools']"
+                  class="ml-2"
+                />
+              </b-button>
 
-            </span>
+              <b-button
+                data-test-id="button-page-view"
+                variant="primary"
+                :title="$t('tooltip.view')"
+                :to="pageViewer(item)"
+                class="d-flex align-items-center"
+                style="margin-left:2px;"
+              >
+                <font-awesome-icon
+                  :icon="['far', 'eye']"
+                />
+              </b-button>
+
+              <b-button
+                data-test-id="button-page-edit"
+                variant="primary"
+                :title="$t('tooltip.edit.page')"
+                :to="{name: 'admin.pages.edit', params: { pageID: item.pageID }}"
+                class="d-flex align-items-center"
+                style="margin-left:2px;"
+              >
+                <font-awesome-icon
+                  :icon="['fas', 'pen']"
+                />
+              </b-button>
+            </b-button-group>
+
             <c-permissions-button
-              v-if="namespace.canGrant"
+              v-if="item.canGrant"
               :title="item.title || item.handle || item.pageID"
               :target="item.title || item.handle || item.pageID"
               :resource="`corteza::compose:page/${namespace.namespaceID}/${item.pageID}`"
               :tooltip="$t('permissions:resources.compose.page.tooltip')"
-              link
-              class="btn px-2"
+              button-variant="outline-light"
+              class="text-dark d-print-none border-0"
             />
           </b-col>
         </b-row>
@@ -178,12 +182,9 @@ export default {
       return (this.getModuleByID(moduleID) || {}).name
     },
 
-    pageViewer ({ pageID = NoID }) {
-      return { name: 'page', params: { pageID } }
-    },
-
-    hideViewPageButton ({ blocks = {}, moduleID = NoID }) {
-      return blocks && blocks.length >= 1 && moduleID !== NoID
+    pageViewer ({ pageID = NoID, moduleID = NoID }) {
+      const name = moduleID !== NoID ? 'page.record.create' : 'page'
+      return { name, params: { pageID } }
     },
 
     handleChangePosition ({ beforeParent, data, afterParent }) {
@@ -194,7 +195,7 @@ export default {
       const reorder = () => {
         const pageIDs = afterParent.children.map(p => p.pageID)
         if (pageIDs.length) {
-          this.$ComposeAPI.pageReorder({ namespaceID, selfID: afterID, pageIDs: pageIDs }).then(() => {
+          this.$ComposeAPI.pageReorder({ namespaceID, selfID: afterID, pageIDs }).then(() => {
             return this.$store.dispatch('page/load', { namespaceID, clear: true, force: true })
           }).then(() => {
             this.toastSuccess(this.$t('reordered'))
@@ -235,17 +236,6 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-$edit-width: 130px;
-$view-width: 70px;
-
-.edit {
-  width: $edit-width;
-}
-
-.view {
-  width: $view-width;
-}
-
 .grab {
   cursor: grab;
   z-index: 1;

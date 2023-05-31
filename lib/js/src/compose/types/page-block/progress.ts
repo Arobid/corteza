@@ -34,6 +34,8 @@ interface Options {
   maxValue: ValueOptions;
   display: DisplayOptions;
   refreshRate: number;
+  showRefresh: boolean;
+  magnifyOption: string;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
@@ -70,6 +72,8 @@ const defaults: Readonly<Options> = Object.freeze({
     thresholds: [],
   },
   refreshRate: 0,
+  showRefresh: false,
+  magnifyOption: '',
 })
 
 export class PageBlockProgress extends PageBlock {
@@ -86,6 +90,8 @@ export class PageBlockProgress extends PageBlock {
     if (!o) return
 
     Apply(this.options, o, Number, 'refreshRate')
+    Apply(this.options, o, Boolean, 'showRefresh')
+    Apply(this.options, o, String, 'magnifyOption')
 
     if (o.value) {
       this.options.value = { ...this.options.value, ...o.value }

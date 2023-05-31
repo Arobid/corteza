@@ -5,20 +5,23 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/cortezaproject/corteza/server/compose/model"
 	"github.com/cortezaproject/corteza/server/compose/types"
+	discovery "github.com/cortezaproject/corteza/server/discovery/types"
 	"github.com/cortezaproject/corteza/server/pkg/dal"
 	"github.com/cortezaproject/corteza/server/pkg/errors"
 	"github.com/cortezaproject/corteza/server/pkg/filter"
 	labelsType "github.com/cortezaproject/corteza/server/pkg/label/types"
+	"github.com/cortezaproject/corteza/server/pkg/logger"
 	"github.com/cortezaproject/corteza/server/store"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
-	"os"
-	"strings"
-	"time"
 )
 
 // RDBMS database fixes
@@ -42,8 +45,202 @@ var (
 		fix_2022_09_00_addRevisionOnComposeRecords,
 		fix_2022_09_00_addMetaOnComposeRecords,
 		fix_2022_09_00_addMissingNodeIdOnFederationMapping,
+		fix_2023_03_00_migrateComposeModuleConfigForRecordDeDup,
+		fix_2022_09_07_changePostgresIdColumnsDatatype,
+		fix_2022_09_00_migrateComposeModuleDiscoveryConfigSettings,
+		fix_2023_03_00_migrateComposePageMeta,
 	}
 )
+
+func fix_2022_09_00_migrateComposeModuleDiscoveryConfigSettings(ctx context.Context, s *Store) (err error) {
+	type (
+		oldS struct {
+			Discovery struct {
+				Public    interface{} `json:"public"`
+				Private   interface{} `json:"private"`
+				Protected interface{} `json:"protected"`
+			} `json:"discovery"`
+
+			DAL             interface{} `json:"dal"`
+			Privacy         interface{} `json:"privacy"`
+			RecordRevisions interface{} `json:"recordRevisions"`
+			RecordDeDup     interface{} `json:"recordDeDup"`
+		}
+
+		result struct {
+			Result discovery.Result `json:"result"`
+		}
+
+		updateModule struct {
+			ID     uint64 `json:"id"`
+			Config []byte `json:"config"`
+		}
+	)
+
+	var (
+		log   = s.log(ctx)
+		query string
+		auxID uint64
+		aux   []byte
+		rows  *sql.Rows
+		ss    oldS
+
+		uu []updateModule
+
+		driver = s.DB.DriverName()
+	)
+
+	const (
+		getModuleDiscoverySettings = `
+			SELECT id, compose_module.config AS discovery
+			FROM compose_module`
+
+		updateModuleDiscoverySettings = `
+			UPDATE compose_module
+			SET config = CAST('%s' AS JSON)
+			WHERE id = %d`
+
+		updatePSQLModuleDiscoverySettings = `
+			UPDATE compose_module
+			SET config = '%s'::jsonb
+			WHERE id = %d`
+	)
+
+	// 1. Check if module has discovery settings
+	// 2. If yes, migrate them to new format from json to json slice for multiple lang support
+	// 3. Save module
+
+	_, err = s.DataDefiner.TableLookup(ctx, model.Module.Ident)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Debug("skipping module config recordDeDup migration: compose_module table not found")
+			return nil
+		}
+		return err
+	}
+
+	_ = s.Tx(ctx, func(ctx context.Context, s store.Storer) (err error) {
+		query = fmt.Sprintf(getModuleDiscoverySettings)
+		rows, err = s.(*Store).DB.QueryContext(ctx, query)
+		if err != nil {
+			return
+		}
+
+		defer func() {
+			// assign error to return value...
+			err = rows.Close()
+		}()
+
+		for rows.Next() {
+			if err = rows.Err(); err != nil {
+				return
+			}
+
+			err = rows.Scan(&auxID, &aux)
+			if err != nil {
+				continue
+			}
+
+			if aux == nil {
+				continue
+			}
+
+			err = json.Unmarshal(aux, &ss)
+			if err != nil {
+				continue
+			}
+
+			var (
+				bb             []byte
+				settings       discovery.ModuleMeta
+				migrateSetting = func(input interface{}) (out result) {
+					out = result{
+						Result: discovery.Result{
+							Lang:   "",
+							Fields: []string{},
+						},
+					}
+					var (
+						ok  bool
+						ii  map[string]interface{}
+						rr  []interface{}
+						res interface{}
+					)
+
+					if input != nil {
+						ii, ok = input.(map[string]interface{})
+						if ok {
+							if ii["result"] != nil {
+								rr, ok = ii["result"].([]interface{})
+								if !ok {
+									res, ok = ii["result"].(interface{})
+									if ok {
+										rr = append(rr, res)
+									}
+								}
+								if ok {
+									for _, r := range rr {
+										out.Result.Lang = r.(map[string]interface{})["lang"].(string)
+										out.Result.Fields = []string{}
+										if _, ok = r.(map[string]interface{})["fields"].([]interface{}); ok {
+											for _, f := range r.(map[string]interface{})["fields"].([]interface{}) {
+												out.Result.Fields = append(out.Result.Fields, f.(string))
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					return
+				}
+			)
+
+			settings.Public.Result = append(settings.Public.Result, migrateSetting(ss.Discovery.Public).Result)
+			settings.Private.Result = append(settings.Private.Result, migrateSetting(ss.Discovery.Private).Result)
+			settings.Protected.Result = append(settings.Protected.Result, migrateSetting(ss.Discovery.Protected).Result)
+
+			ss.Discovery.Public = settings.Public
+			ss.Discovery.Private = settings.Private
+			ss.Discovery.Protected = settings.Protected
+
+			bb, err = json.Marshal(ss)
+			if err != nil {
+				continue
+			}
+
+			uu = append(uu, updateModule{
+				ID:     auxID,
+				Config: bb,
+			})
+		}
+
+		for _, u := range uu {
+			if driver == "postgres" || driver == "postgres+debug" {
+				query = fmt.Sprintf(updatePSQLModuleDiscoverySettings, u.Config, u.ID)
+			} else {
+				query = fmt.Sprintf(updateModuleDiscoverySettings, u.Config, u.ID)
+			}
+			log.Debug("saving migrated module.config.discovery settings", logger.Uint64("id", u.ID))
+			_, err = s.(*Store).DB.ExecContext(ctx, query)
+			if err != nil {
+				log.Debug("error saving migrated module.config.discovery settings", logger.Uint64("id", u.ID))
+				continue
+			}
+		}
+
+		return
+	})
+
+	return
+}
+
+func fix_2023_03_00_migrateComposePageMeta(ctx context.Context, s *Store) (err error) {
+	return addColumn(ctx, s,
+		"compose_page",
+		model.Page.Attributes.FindByIdent("meta"),
+	)
+}
 
 func fix_2022_09_00_extendComposeModuleForPrivacyAndDAL(ctx context.Context, s *Store) (err error) {
 	return addColumn(ctx, s,
@@ -195,7 +392,7 @@ func fix_2022_09_00_migrateOldComposeRecordValues(ctx context.Context, s *Store)
 
 		perModLog := log.With(
 			zap.String("handle", mod.Handle),
-			zap.Uint64("id", mod.ID),
+			logger.Uint64("id", mod.ID),
 		)
 
 		err = func() (err error) {
@@ -208,7 +405,7 @@ func fix_2022_09_00_migrateOldComposeRecordValues(ctx context.Context, s *Store)
 
 				err = func() (err error) {
 					query = fmt.Sprintf(recordsPerModule, mod.NamespaceID, mod.ID, sliceLastRecordID, recordSliceSize)
-					//println(query)
+					// println(query)
 					rows, err = s.DB.QueryContext(ctx, query)
 					if err != nil {
 						return
@@ -237,7 +434,7 @@ func fix_2022_09_00_migrateOldComposeRecordValues(ctx context.Context, s *Store)
 					}
 
 					query = fmt.Sprintf(recValuesPerModule, strings.Join(recordIDs, ","))
-					//println(query)
+					// println(query)
 					rows, err = s.DB.QueryContext(ctx, query)
 					if err != nil {
 						return
@@ -427,6 +624,173 @@ func fix_2022_09_00_addMissingNodeIdOnFederationMapping(ctx context.Context, s *
 		"federation_module_mapping",
 		&dal.Attribute{Ident: "node_id", Type: &dal.TypeID{}},
 	)
+}
+
+func fix_2022_09_07_changePostgresIdColumnsDatatype(ctx context.Context, s *Store) (err error) {
+	var tableName string
+	if !strings.HasPrefix(s.DB.DriverName(), "postgres") {
+		return
+	}
+
+	log := s.log(ctx)
+	log.Info("changing postgres ID columns")
+
+	tnames := tableNames()
+	tnamesQry := `SELECT table_name FROM INFORMATION_SCHEMA.COLUMNS  WHERE column_name = 'id' AND
+                table_name IN('` + strings.Join(tnames, "', '") + `') AND table_name NOT LIKE 'auth_sessions' AND is_updatable = 'YES'`
+
+	rows, err := s.DB.QueryContext(ctx, tnamesQry)
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		// Get the table name
+		err = rows.Scan(&tableName)
+		if err != nil {
+			return err
+		}
+
+		query := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN id TYPE NUMERIC USING CAST(id AS NUMERIC)", tableName)
+		_, err = s.DB.ExecContext(ctx, query)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func fix_2023_03_00_migrateComposeModuleConfigForRecordDeDup(ctx context.Context, s *Store) (err error) {
+	// @note skipping this for SQL server since it was introduced with 2023.3.0 so there.
+	// There are issues with the implementation which won't work on mssql.
+	// Since there is no way this would do anything on mssql, we can skip it.
+	if s.DB.DriverName() == "sqlserver" {
+		return
+	}
+
+	type (
+		oldRule struct {
+			Name       string   `json:"name"`
+			Strict     bool     `json:"strict"`
+			Attributes []string `json:"attributes"`
+		}
+		rules struct {
+			Rules []oldRule `json:"rules"`
+		}
+	)
+
+	var (
+		log     = s.log(ctx)
+		query   string
+		aux     []byte
+		rr      rules
+		rows    *sql.Rows
+		modules types.ModuleSet
+	)
+
+	_, err = s.DataDefiner.TableLookup(ctx, model.Module.Ident)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Debug("skipping module config recordDeDup migration: compose_module table not found")
+			return nil
+		}
+		return err
+	}
+
+	const (
+		moduleConfigRecordDeDup = `
+			SELECT compose_module.config -> 'recordDeDup' AS recordDeDup
+			FROM compose_module 
+			WHERE compose_module.id = %d`
+	)
+
+	modules, _, err = s.SearchComposeModules(ctx, types.ModuleFilter{})
+	if err != nil {
+		return
+	}
+
+	// 1. Check if module has recordDeDup rules
+	// 2. If yes, migrate them to new format
+	// 3. Save module
+	for _, m := range modules {
+		var (
+			migratedRules types.DeDupRuleSet
+		)
+
+		if err = s.Tx(ctx, func(ctx context.Context, s store.Storer) (err error) {
+			log.Debug("collecting module.config.recordDeDup for module", logger.Uint64("id", m.ID))
+
+			query = fmt.Sprintf(moduleConfigRecordDeDup, m.ID)
+			rows, err = s.(*Store).DB.QueryContext(ctx, query)
+			if err != nil {
+				return
+			}
+
+			defer func() {
+				// assign error to return value...
+				err = rows.Close()
+			}()
+
+			for rows.Next() {
+				if err = rows.Err(); err != nil {
+					log.Info("failed to scan rows to migrated module.config.recordDeDup for module",
+						logger.Uint64("id", m.ID))
+					return
+				}
+
+				err = rows.Scan(&aux)
+				if err != nil {
+					continue
+				}
+
+				err = json.Unmarshal(aux, &rr)
+				if err != nil {
+					continue
+				}
+			}
+
+			for _, r := range rr.Rules {
+				if len(r.Attributes) == 0 {
+					continue
+				}
+
+				var rcc types.DeDupRuleConstraintSet
+				for _, atr := range r.Attributes {
+					if len(atr) == 0 {
+						continue
+					}
+
+					rcc = append(rcc, &types.DeDupRuleConstraint{
+						Attribute:  atr,
+						Modifier:   "ignore-case",
+						MultiValue: "equal",
+					})
+				}
+
+				migratedRules = append(migratedRules, &types.DeDupRule{
+					Strict:        r.Strict,
+					ConstraintSet: rcc,
+				})
+			}
+
+			if len(migratedRules) > 0 {
+				m.Config.RecordDeDup.Rules = migratedRules
+
+				log.Debug("saving migrated module.config.recordDeDup for module", logger.Uint64("id", m.ID))
+				if err = s.UpdateComposeModule(ctx, m); err != nil {
+					log.Debug("error saving migrated module.config.recordDeDup for module", logger.Uint64("id", m.ID))
+					return
+				}
+			}
+
+			return
+		}); err != nil {
+			continue
+		}
+	}
+
+	return
 }
 
 func count(ctx context.Context, s *Store, table string, ee ...goqu.Expression) (count int) {

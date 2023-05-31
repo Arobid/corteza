@@ -6,8 +6,10 @@ import (
 
 	"github.com/cortezaproject/corteza/server/store/adapters/rdbms/ddl"
 	"github.com/cortezaproject/corteza/server/store/adapters/rdbms/ql"
+	"github.com/spf13/cast"
 
 	"github.com/cortezaproject/corteza/server/pkg/dal"
+	"github.com/cortezaproject/corteza/server/pkg/expr"
 	"github.com/cortezaproject/corteza/server/store/adapters/rdbms/drivers"
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/dialect/mysql"
@@ -239,7 +241,24 @@ func (d mysqlDialect) ExprHandler(n *ql.ASTNode, args ...exp.Expression) (expr e
 		return drivers.OpHandlerNotIn(d, n, args...)
 	}
 
-	return ql.DefaultRefHandler(n, args...)
+	return ref2exp.RefHandler(n, args...)
+}
+
+func (d mysqlDialect) ValHandler(n *ql.ASTNode) (out exp.Expression, err error) {
+	switch v := n.Value.V.(type) {
+	case *expr.Boolean:
+		// value handling for boolean is different in mysql
+		// this was done to support value parsing for (IS ?) statement
+		if cast.ToBool(v.Get()) {
+			out = drivers.LiteralTRUE
+		} else {
+			out = drivers.LiteralFALSE
+		}
+	default:
+		out = exp.NewLiteralExpression("?", n.Value.V.Get())
+	}
+
+	return
 }
 
 func (d mysqlDialect) OrderedExpression(expr exp.Expression, dir exp.SortDirection, _ exp.NullSortType) exp.OrderedExpression {

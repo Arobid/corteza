@@ -21,6 +21,7 @@
           :text="hint"
         />
       </div>
+
       <small
         class="form-text font-weight-light text-muted"
       >
@@ -108,9 +109,11 @@ export default {
   computed: {
     selectOptions () {
       return this.field.options.options.map(o => {
-        const disabled = o.value && this.field.isMulti ? (this.value || []).includes(o.value) : this.value === o.value
+        const disabled = o.value && this.field.isMulti && !this.field.options.isUniqueMultiValue
+          ? this.value === o.value
+          : (this.value || []).includes(o.value)
         return { ...o, disabled }
-      }).filter(({ value = '' }) => value)
+      }).filter(({ value = '', text = '' }) => value && text)
     },
   },
 

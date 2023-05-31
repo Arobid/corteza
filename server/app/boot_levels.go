@@ -20,6 +20,7 @@ import (
 	fedService "github.com/cortezaproject/corteza/server/federation/service"
 	"github.com/cortezaproject/corteza/server/pkg/actionlog"
 	"github.com/cortezaproject/corteza/server/pkg/apigw"
+	apigwTypes "github.com/cortezaproject/corteza/server/pkg/apigw/types"
 	"github.com/cortezaproject/corteza/server/pkg/auth"
 	"github.com/cortezaproject/corteza/server/pkg/corredor"
 	"github.com/cortezaproject/corteza/server/pkg/eventbus"
@@ -291,6 +292,11 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 		return nil
 	}
 
+	err = app.initEnvoy(ctx, app.Log)
+	if err != nil {
+		return
+	}
+
 	if err := app.Provision(ctx); err != nil {
 		return err
 	}
@@ -344,7 +350,7 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 			log = app.Log
 		}
 
-		//Initialize RBAC subsystem
+		// Initialize RBAC subsystem
 		ac := rbac.NewService(log, app.Store)
 
 		// and (re)load rules from the storage backend
@@ -364,14 +370,15 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 	// Note: this is a legacy approach, all services from all 3 apps
 	// will most likely be merged in the future
 	err = sysService.Initialize(ctx, app.Log, app.Store, app.WsServer, sysService.Config{
-		ActionLog: app.Opt.ActionLog,
-		Discovery: app.Opt.Discovery,
-		Storage:   app.Opt.ObjStore,
-		Template:  app.Opt.Template,
-		DB:        app.Opt.DB,
-		Auth:      app.Opt.Auth,
-		RBAC:      app.Opt.RBAC,
-		Limit:     app.Opt.Limit,
+		ActionLog:  app.Opt.ActionLog,
+		Discovery:  app.Opt.Discovery,
+		Storage:    app.Opt.ObjStore,
+		Template:   app.Opt.Template,
+		DB:         app.Opt.DB,
+		Auth:       app.Opt.Auth,
+		RBAC:       app.Opt.RBAC,
+		Limit:      app.Opt.Limit,
+		Attachment: app.Opt.Attachment,
 	})
 
 	if err != nil {
@@ -415,8 +422,17 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 	corredor.Service().SetUserFinder(sysService.DefaultUser)
 	corredor.Service().SetRoleFinder(sysService.DefaultRole)
 
-	// Initialize API GW bits
-	apigw.Setup(*options.Apigw(), app.Log, app.Store)
+	{
+		var c = apigwTypes.Config{Enabled: true}
+
+		c.Profiler.Global = sysService.CurrentSettings.Apigw.Profiler.Global
+		c.Profiler.Enabled = sysService.CurrentSettings.Apigw.Profiler.Enabled
+		c.Proxy.FollowRedirects = sysService.CurrentSettings.Apigw.Proxy.FollowRedirects
+		c.Proxy.OutboundTimeout = sysService.CurrentSettings.Apigw.Proxy.OutboundTimeout
+
+		// Initialize API GW bits
+		apigw.Setup(c, app.Log, app.Store)
+	}
 
 	if app.Opt.Federation.Enabled {
 		// Initializes federation services
@@ -436,7 +452,7 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 
 	// Initializing discovery
 	if app.Opt.Discovery.Enabled {
-		err = discoveryService.Initialize(ctx, app.Opt.Discovery, app.Store)
+		err = discoveryService.Initialize(ctx, app.Log, app.Opt.Discovery, app.Store)
 		if err != nil {
 			return fmt.Errorf("could not initialize discovery services: %w", err)
 		}
@@ -513,7 +529,7 @@ func (app *CortezaApp) Activate(ctx context.Context) (err error) {
 	updateFederationSettings(app.Opt.Federation, sysService.CurrentSettings)
 	updateAuthSettings(app.AuthService, sysService.CurrentSettings)
 	updatePasswdSettings(app.Opt.Auth, sysService.CurrentSettings)
-	updateApigwSettings(app.Opt.Apigw, sysService.CurrentSettings)
+
 	sysService.DefaultSettings.Register("auth.", func(ctx context.Context, current interface{}, set types.SettingValueSet) {
 		appSettings, is := current.(*types.AppSettings)
 		if !is {
@@ -549,9 +565,17 @@ func (app *CortezaApp) Activate(ctx context.Context) (err error) {
 		messagebus.Service().Watch(ctx, service.DefaultQueue)
 	}
 
-	// Reload routes
-	if err = apigw.Service().Reload(ctx); err != nil {
-		return fmt.Errorf("could not initialize api gateway services: %w", err)
+	{
+		if err = applyApigwOptionsToSettings(ctx, app.Log, app.Opt.Apigw, sysService.CurrentSettings); err != nil {
+			return fmt.Errorf("could not apply integration gateway options to settings: %w", err)
+		}
+
+		updateApigwSettings(ctx, sysService.CurrentSettings)
+
+		// // Reload routes
+		if err = apigw.Service().Reload(ctx); err != nil {
+			return fmt.Errorf("could not initialize api gateway services: %w", err)
+		}
 	}
 
 	app.lvl = bootLevelActivated
@@ -588,8 +612,8 @@ func (app *CortezaApp) initSystemEntities(ctx context.Context) (err error) {
 
 	app.Log.Debug(
 		"system entities set",
-		zap.Uint64s("users", uu.IDs()),
-		zap.Uint64s("roles", rr.IDs()),
+		logger.Uint64s("users", uu.IDs()),
+		logger.Uint64s("roles", rr.IDs()),
 	)
 
 	return nil
@@ -604,6 +628,8 @@ func updateAuthSettings(svc authServicer, current *types.AppSettings) {
 		PasswordCreateEnabled:     current.Auth.Internal.PasswordCreate.Enabled,
 		SplitCredentialsCheck:     current.Auth.Internal.SplitCredentialsCheck,
 		ExternalEnabled:           current.Auth.External.Enabled,
+		ProfileAvatarEnabled:      current.Auth.Internal.ProfileAvatar.Enabled,
+		SendUserInviteEmail:       current.Auth.Internal.SendUserInviteEmail.Enabled,
 		MultiFactor: authSettings.MultiFactor{
 			TOTP: authSettings.TOTP{
 				Enabled:  current.Auth.MultiFactor.TOTP.Enabled,
@@ -659,9 +685,32 @@ func updatePasswdSettings(opt options.AuthOpt, current *types.AppSettings) {
 	current.Auth.Internal.PasswordConstraints.PasswordSecurity = opt.PasswordSecurity
 }
 
-func updateApigwSettings(opt options.ApigwOpt, current *types.AppSettings) {
-	current.Apigw.ProfilerEnabled = opt.ProfilerEnabled
-	current.Apigw.ProfilerGlobal = opt.ProfilerGlobal
+// Loads current settings into integration gateway and handles the updates / reloads
+func updateApigwSettings(ctx context.Context, current *types.AppSettings) {
+
+	updateCurrentSettings := func(ctx context.Context, s *types.AppSettings) {
+		var c = apigwTypes.Config{Enabled: true}
+
+		c.Profiler.Enabled = s.Apigw.Profiler.Enabled
+		c.Profiler.Global = s.Apigw.Profiler.Global
+		c.Proxy.FollowRedirects = s.Apigw.Proxy.FollowRedirects
+		c.Proxy.OutboundTimeout = s.Apigw.Proxy.OutboundTimeout
+
+		apigw.Service().UpdateSettings(ctx, c)
+	}
+
+	sysService.DefaultSettings.Register("apigw", func(ctx context.Context, current interface{}, _ types.SettingValueSet) {
+		appSettings, is := current.(*types.AppSettings)
+		if !is {
+			return
+		}
+
+		updateCurrentSettings(ctx, appSettings)
+	})
+
+	// on first load, the options (env) can be different than loaded settings
+	// we need to update them here
+	updateCurrentSettings(ctx, current)
 }
 
 // Checks if discovery is enabled in the options
@@ -820,7 +869,7 @@ func applySmtpOptionsToSettings(ctx context.Context, log *zap.Logger, opt option
 	// When settings for the SMTP servers are missing,
 	// we'll try to use one from the options (environmental vars)
 	s := &types.SettingValue{Name: "smtp.servers"}
-	err = s.SetValue([]*types.SmtpServers{optServer})
+	err = s.SetSetting([]*types.SmtpServers{optServer})
 
 	if err != nil {
 		return
@@ -831,6 +880,63 @@ func applySmtpOptionsToSettings(ctx context.Context, log *zap.Logger, opt option
 	}
 
 	if err = sysService.DefaultSettings.UpdateCurrent(ctx); err != nil {
+		return
+	}
+
+	return
+}
+
+func applyApigwOptionsToSettings(ctx context.Context, log *zap.Logger, opt options.ApigwOpt, current *types.AppSettings) (err error) {
+	optApigw := &types.ApigwSettings{Enabled: opt.Enabled}
+	optApigw.Profiler.Enabled = opt.ProfilerEnabled
+	optApigw.Profiler.Global = opt.ProfilerGlobal
+	optApigw.Proxy.FollowRedirects = opt.ProxyFollowRedirects
+
+	if current.Apigw != *optApigw {
+		log.Warn(
+			"Environmental variables (APIGW_*) and integration gateway settings " +
+				"(most likely changed via admin console) are not the same. " +
+				"When server was restarted, values from environmental " +
+				"variables were copied to settings for easier management. " +
+				"To avoid confusion and potential issues, we suggest you to " +
+				"remove all APIGW_* variables")
+	}
+
+	ctx = auth.SetIdentityToContext(ctx, auth.ServiceUser())
+
+	if updateSetting(ctx, "apigw.enabled", optApigw.Enabled) != nil {
+		return
+	}
+
+	if updateSetting(ctx, "apigw.profiler.enabled", optApigw.Profiler.Enabled) != nil {
+		return
+	}
+
+	if updateSetting(ctx, "apigw.profiler.global", optApigw.Profiler.Global) != nil {
+		return
+	}
+
+	if updateSetting(ctx, "apigw.proxy.follow-redirects", optApigw.Proxy.FollowRedirects) != nil {
+		return
+	}
+
+	if err = sysService.DefaultSettings.UpdateCurrent(ctx); err != nil {
+		return
+	}
+
+	return
+}
+
+func updateSetting(ctx context.Context, path string, val interface{}) (err error) {
+	s := &types.SettingValue{Name: path}
+
+	err = s.SetSetting(val)
+
+	if err != nil {
+		return
+	}
+
+	if err = sysService.DefaultSettings.Set(ctx, s); err != nil {
 		return
 	}
 

@@ -14,7 +14,7 @@
         :system-fields="systemFields"
         :disabled-types="disabledTypes"
         :fields.sync="selectedFields"
-        style="max-height: 45vh;"
+        style="height: 45vh;"
       />
     </b-form-group>
 
@@ -30,8 +30,10 @@
         v-if="forTimezone"
         v-model="exportTimezone"
         :options="timezones"
-        class="bg-white"
+        :get-option-key="getOptionKey"
+        :calculate-position="calculateDropdownPosition"
         :placeholder="$t('recordList.export.timezonePlaceholder')"
+        class="bg-white"
       />
     </b-form-group>
 
@@ -487,7 +489,9 @@ export default {
 
     preselectedFields: {
       handler (value) {
-        this.fields = value.filter(f => this.disabledTypes.indexOf(f.kind) < 0)
+        if (!this.fields.length) {
+          this.fields = value.filter(f => this.disabledTypes.indexOf(f.kind) < 0)
+        }
       },
       immediate: true,
     },
@@ -641,6 +645,10 @@ export default {
             this.processingCount = false
           })
       }
+    },
+
+    getOptionKey ({ tzCode }) {
+      return tzCode
     },
   },
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/cortezaproject/corteza/server/pkg/revisions"
+	"github.com/spf13/cast"
 
 	"github.com/cortezaproject/corteza/server/compose/rest/request"
 	"github.com/cortezaproject/corteza/server/compose/service"
@@ -30,6 +31,15 @@ import (
 )
 
 type (
+	recordBulkPatchRecord struct {
+		Record      *types.Record              `json:"record"`
+		Error       error                      `json:"error,omitempty"`
+		ValueErrors *types.RecordValueErrorSet `json:"valueErrors,omitempty"`
+	}
+	recordBulkPatchPayload struct {
+		Records []recordBulkPatchRecord `json:"records"`
+	}
+
 	recordPayload struct {
 		*types.Record
 
@@ -40,6 +50,7 @@ type (
 		CanUpdateRecord        bool `json:"canUpdateRecord"`
 		CanReadRecord          bool `json:"canReadRecord"`
 		CanDeleteRecord        bool `json:"canDeleteRecord"`
+		CanUndeleteRecord      bool `json:"canUndeleteRecord"`
 		CanSearchRevisions     bool `json:"canSearchRevisions"`
 
 		CanGrant bool `json:"canGrant"`
@@ -65,6 +76,7 @@ type (
 		CanUpdateRecord(context.Context, *types.Record) bool
 		CanReadRecord(context.Context, *types.Record) bool
 		CanDeleteRecord(context.Context, *types.Record) bool
+		CanUndeleteRecord(context.Context, *types.Record) bool
 		CanManageOwnerOnRecord(context.Context, *types.Record) bool
 		CanSearchRevisionsOnRecord(context.Context, *types.Record) bool
 	}
@@ -201,12 +213,54 @@ func (ctrl *Record) Create(ctx context.Context, r *request.RecordCreate) (interf
 	}
 	oo = append(oo, oob...)
 
-	rr, dd, err := ctrl.record.Bulk(ctx, oo...)
+	results, err := ctrl.record.Bulk(ctx, false, oo...)
 	if rve := types.IsRecordValueErrorSet(err); rve != nil {
 		return ctrl.handleValidationError(rve), nil
 	}
 
+	var (
+		rr types.RecordSet
+		dd = &types.RecordValueErrorSet{}
+	)
+
+	for _, r := range results {
+		rr = append(rr, r.Record)
+		dd.Merge(r.DuplicationError)
+	}
+
 	return ctrl.makeBulkPayload(ctx, m, dd, err, rr...)
+}
+
+func (ctrl *Record) Patch(ctx context.Context, req *request.RecordPatch) (interface{}, error) {
+	var (
+		err error
+	)
+
+	oo := make([]*types.RecordBulkOperation, 0)
+
+	counters := make(map[string]uint)
+	for _, v := range req.Values {
+		v.Place = counters[v.Name]
+		counters[v.Name]++
+	}
+
+	for _, r := range req.Records {
+		oo = append(oo, &types.RecordBulkOperation{
+			RecordID:    cast.ToUint64(r),
+			NamespaceID: req.NamespaceID,
+			ModuleID:    req.ModuleID,
+
+			Record:    &types.Record{Values: req.Values},
+			Operation: types.OperationTypePatch,
+		})
+	}
+
+	results, err := ctrl.record.Bulk(ctx, true, oo...)
+	if rve := types.IsRecordValueErrorSet(err); rve != nil {
+		return ctrl.handleValidationError(rve), nil
+	}
+
+	return ctrl.makeRecordBulkPatchPayload(ctx, results, err)
 }
 
 func (ctrl *Record) Update(ctx context.Context, r *request.RecordUpdate) (interface{}, error) {
@@ -253,9 +307,17 @@ func (ctrl *Record) Update(ctx context.Context, r *request.RecordUpdate) (interf
 	}
 	oo = append(oo, oob...)
 
-	rr, dd, err := ctrl.record.Bulk(ctx, oo...)
+	results, err := ctrl.record.Bulk(ctx, false, oo...)
 	if rve := types.IsRecordValueErrorSet(err); rve != nil {
 		return ctrl.handleValidationError(rve), nil
+	}
+
+	var rr types.RecordSet
+	dd := &types.RecordValueErrorSet{}
+
+	for _, r := range results {
+		rr = append(rr, r.Record)
+		dd.Merge(r.DuplicationError)
 	}
 
 	return ctrl.makeBulkPayload(ctx, m, dd, err, rr...)
@@ -271,6 +333,18 @@ func (ctrl *Record) BulkDelete(ctx context.Context, r *request.RecordBulkDelete)
 	}
 
 	return api.OK(), ctrl.record.DeleteByID(ctx,
+		r.NamespaceID,
+		r.ModuleID,
+		payload.ParseUint64s(r.RecordIDs)...,
+	)
+}
+
+func (ctrl *Record) Undelete(ctx context.Context, r *request.RecordUndelete) (interface{}, error) {
+	return api.OK(), ctrl.record.UndeleteByID(ctx, r.NamespaceID, r.ModuleID, r.RecordID)
+}
+
+func (ctrl *Record) BulkUndelete(ctx context.Context, r *request.RecordBulkUndelete) (interface{}, error) {
+	return api.OK(), ctrl.record.UndeleteByID(ctx,
 		r.NamespaceID,
 		r.ModuleID,
 		payload.ParseUint64s(r.RecordIDs)...,
@@ -618,8 +692,31 @@ func (ctrl Record) makeBulkPayload(ctx context.Context, m *types.Module, dd *typ
 		CanUpdateRecord:        ctrl.ac.CanUpdateRecord(ctx, rr[0]),
 		CanReadRecord:          ctrl.ac.CanReadRecord(ctx, rr[0]),
 		CanDeleteRecord:        ctrl.ac.CanDeleteRecord(ctx, rr[0]),
+		CanUndeleteRecord:      ctrl.ac.CanUndeleteRecord(ctx, rr[0]),
 		CanSearchRevisions:     ctrl.ac.CanSearchRevisionsOnRecord(ctx, rr[0]),
 	}, nil
+}
+
+func (ctrl Record) makeRecordBulkPatchPayload(ctx context.Context, rr []types.RecordBulkOperationResult, err error) (*recordBulkPatchPayload, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	out := &recordBulkPatchPayload{
+		Records: make([]recordBulkPatchRecord, 0, len(rr)),
+	}
+
+	for _, r := range rr {
+		vr := r.ValueError
+		vr.Merge(r.DuplicationError)
+		out.Records = append(out.Records, recordBulkPatchRecord{
+			Record:      r.Record,
+			ValueErrors: vr,
+			Error:       r.Error,
+		})
+	}
+
+	return out, nil
 }
 
 func (ctrl Record) makePayload(ctx context.Context, m *types.Module, r *types.Record, dd *types.RecordValueErrorSet, err error) (*recordPayload, error) {
@@ -637,6 +734,7 @@ func (ctrl Record) makePayload(ctx context.Context, m *types.Module, r *types.Re
 		CanUpdateRecord:        ctrl.ac.CanUpdateRecord(ctx, r),
 		CanReadRecord:          ctrl.ac.CanReadRecord(ctx, r),
 		CanDeleteRecord:        ctrl.ac.CanDeleteRecord(ctx, r),
+		CanUndeleteRecord:      ctrl.ac.CanUndeleteRecord(ctx, r),
 		CanSearchRevisions:     ctrl.ac.CanSearchRevisionsOnRecord(ctx, r),
 	}, nil
 }

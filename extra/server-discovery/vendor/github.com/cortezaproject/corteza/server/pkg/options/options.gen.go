@@ -14,7 +14,8 @@ import (
 
 type (
 	DBOpt struct {
-		DSN string `env:"DB_DSN"`
+		DSN                           string `env:"DB_DSN"`
+		AllowDestructiveSchemaChanges bool   `env:"DB_ALLOW_DESTRUCTIVE_SCHEMA_CHANGES"`
 	}
 
 	HTTPClientOpt struct {
@@ -122,6 +123,7 @@ type (
 		DefaultClient            string        `env:"AUTH_DEFAULT_CLIENT"`
 		AssetsPath               string        `env:"AUTH_ASSETS_PATH"`
 		DevelopmentMode          bool          `env:"AUTH_DEVELOPMENT_MODE"`
+		ProvisionSuperUser       string        `env:"AUTH_PROVISION_SUPER_USER"`
 	}
 
 	CorredorOpt struct {
@@ -207,10 +209,6 @@ type (
 		Path   string `env:"PROVISION_PATH"`
 	}
 
-	SeederOpt struct {
-		LogEnabled bool `env:"SEEDER_LOG_ENABLED"`
-	}
-
 	SentryOpt struct {
 		DSN              string  `env:"SENTRY_DSN"`
 		Debug            bool    `env:"SENTRY_DEBUG"`
@@ -263,6 +261,13 @@ type (
 		CortezaDomain string `env:"DISCOVERY_CORTEZA_DOMAIN"`
 		BaseUrl       string `env:"DISCOVERY_BASE_URL"`
 	}
+
+	AttachmentOpt struct {
+		AvatarMaxFileSize             int64  `env:"ATTACHMENT_AVATAR_MAX_FILE_SIZE"`
+		AvatarInitialsFontPath        string `env:"AVATAR_INITIALS_FONT_PATH"`
+		AvatarInitialsBackgroundColor string `env:"AVATAR_INITIALS_BACKGROUND_COLOR"`
+		AvatarInitialsColor           string `env:"AVATAR_INITIALS_COLOR"`
+	}
 )
 
 // DB initializes and returns a DBOpt with default values
@@ -270,7 +275,8 @@ type (
 // This function is auto-generated
 func DB() (o *DBOpt) {
 	o = &DBOpt{
-		DSN: "sqlite3://file::memory:?cache=shared&mode=memory",
+		DSN:                           "sqlite3://file::memory:?cache=shared&mode=memory",
+		AllowDestructiveSchemaChanges: false,
 	}
 
 	// Custom defaults
@@ -868,31 +874,6 @@ func Provision() (o *ProvisionOpt) {
 	return
 }
 
-// Seeder initializes and returns a SeederOpt with default values
-//
-// This function is auto-generated
-func Seeder() (o *SeederOpt) {
-	o = &SeederOpt{}
-
-	// Custom defaults
-	func(o interface{}) {
-		if def, ok := o.(interface{ Defaults() }); ok {
-			def.Defaults()
-		}
-	}(o)
-
-	fill(o)
-
-	// Custom cleanup
-	func(o interface{}) {
-		if def, ok := o.(interface{ Cleanup() }); ok {
-			def.Cleanup()
-		}
-	}(o)
-
-	return
-}
-
 // Sentry initializes and returns a SentryOpt with default values
 //
 // This function is auto-generated
@@ -1069,6 +1050,36 @@ func Discovery() (o *DiscoveryOpt) {
 	o = &DiscoveryOpt{
 		Enabled: false,
 		Debug:   false,
+	}
+
+	// Custom defaults
+	func(o interface{}) {
+		if def, ok := o.(interface{ Defaults() }); ok {
+			def.Defaults()
+		}
+	}(o)
+
+	fill(o)
+
+	// Custom cleanup
+	func(o interface{}) {
+		if def, ok := o.(interface{ Cleanup() }); ok {
+			def.Cleanup()
+		}
+	}(o)
+
+	return
+}
+
+// Attachment initializes and returns a AttachmentOpt with default values
+//
+// This function is auto-generated
+func Attachment() (o *AttachmentOpt) {
+	o = &AttachmentOpt{
+		AvatarMaxFileSize:             1000000,
+		AvatarInitialsFontPath:        "fonts/Poppins-Regular.ttf",
+		AvatarInitialsBackgroundColor: "#F3F3F3",
+		AvatarInitialsColor:           "#162425",
 	}
 
 	// Custom defaults

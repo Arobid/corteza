@@ -52,6 +52,17 @@
       @sessionsRevoke="onSessionsRevoke"
     />
 
+    <c-user-editor-avatar
+      v-if="user && userID && $Settings.get('auth.internal.profile-avatar.Enabled', false)"
+      :user="user"
+      :processing="avatar.processing"
+      :success="avatar.success"
+      class="mt-3"
+      @submit="onAvatarSubmit"
+      @onUpload="onAvatarUpload"
+      @resetAttachment="onResetAvatar"
+    />
+
     <c-user-editor-roles
       v-if="user && userID"
       v-model="membership.active"
@@ -92,6 +103,7 @@
 import { NoID, system } from '@cortezaproject/corteza-js'
 import editorHelpers from 'corteza-webapp-admin/src/mixins/editorHelpers'
 import CUserEditorInfo from 'corteza-webapp-admin/src/components/User/CUserEditorInfo'
+import CUserEditorAvatar from '../../../components/User/CUserEditorAvatar'
 import CUserEditorPassword from 'corteza-webapp-admin/src/components/User/CUserEditorPassword'
 import CUserEditorMfa from 'corteza-webapp-admin/src/components/User/CUserEditorMFA'
 import CUserEditorRoles from 'corteza-webapp-admin/src/components/User/CUserEditorRoles'
@@ -103,6 +115,7 @@ export default {
     CUserEditorRoles,
     CUserEditorPassword,
     CUserEditorInfo,
+    CUserEditorAvatar,
     CUserEditorMfa,
     CUserEditorExternalAuthProviders,
   },
@@ -137,6 +150,10 @@ export default {
 
       // Processing and success flags for each form
       info: {
+        processing: false,
+        success: false,
+      },
+      avatar: {
         processing: false,
         success: false,
       },
@@ -193,10 +210,10 @@ export default {
       return system.UserEvent(res)
     },
 
-    fetchUser () {
+    async fetchUser () {
       this.incLoader()
 
-      this.$SystemAPI.userRead({ userID: this.userID })
+      return this.$SystemAPI.userRead({ userID: this.userID })
         .then(user => {
           this.user = new system.User(user)
         })
@@ -269,6 +286,27 @@ export default {
             this.info.processing = false
           })
       }
+    },
+
+    onAvatarSubmit (user) {
+      this.avatar.processing = true
+
+      const payload = {
+        userID: user.userID,
+        avatarColor: user.meta.avatarColor,
+        avatarBgColor: user.meta.avatarBgColor,
+      }
+
+      this.$SystemAPI.userProfileAvatarInitial(payload)
+        .then(() => this.fetchUser())
+        .then(() => {
+          this.animateSuccess('avatar')
+          this.toastSuccess(this.$t('notification:user.avatarSettings.success'))
+        })
+        .catch(this.toastErrorHandler(this.$t('notification:user.avatarSettings.error')))
+        .finally(() => {
+          this.avatar.processing = false
+        })
     },
 
     /**
@@ -353,14 +391,7 @@ export default {
       }
 
       return this.$SystemAPI.api().request(cfg).then(response => {
-        if (response.data.error) {
-          return Promise.reject(response.data.error)
-        } else {
-          return response.data.response
-        }
-      }).then(user => {
-        this.user = new system.User(user)
-        this.fetchExternalAuthProviders()
+        this.fetchUser()
       })
     },
 
@@ -380,7 +411,7 @@ export default {
         ...original.filter(roleID => !active.includes(roleID)).map(roleID => {
           return this.$SystemAPI.userMembershipRemove({ roleID, userID })
         }),
-        // all new memerships
+        // all new memberships
         ...active.filter(roleID => !original.includes(roleID)).map(roleID => {
           return this.$SystemAPI.userMembershipAdd({ roleID, userID })
         }),
@@ -450,6 +481,23 @@ export default {
         .finally(() => {
           this.decLoader()
         })
+    },
+
+    onAvatarUpload () {
+      this.fetchUser().then(() => {
+        this.toastSuccess(this.$t('notification:user.avatarUpload.success'))
+      })
+    },
+
+    onResetAvatar () {
+      const userID = this.userID
+
+      this.$SystemAPI.userDeleteAvatar({ userID })
+        .then(() => this.fetchUser())
+        .then(() => {
+          this.toastSuccess(this.$t('notification:user.avatarDelete.success'))
+        })
+        .catch(this.toastErrorHandler(this.$t('notification:user.avatarDelete.error')))
     },
   },
 }

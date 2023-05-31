@@ -75,7 +75,7 @@
       </div>
 
       <div
-        ref="cc"
+        :ref="`cc-${blockIndex}`"
         class="h-100"
       >
         <div
@@ -87,7 +87,7 @@
 
         <full-calendar
           v-show="show && !processing"
-          ref="fc"
+          :ref="`fc-${blockIndex}`"
           :key="key"
           :height="getHeight()"
           :events="events"
@@ -212,6 +212,7 @@ export default {
       deep: true,
       handler () {
         this.updateSize()
+        this.refresh()
       },
     },
     boundingRect: {
@@ -226,7 +227,7 @@ export default {
 
   created () {
     this.changeLocale(this.currentLanguage)
-    this.refreshBlock(this.refresh, true)
+    this.refreshBlock(this.refresh)
   },
 
   methods: {
@@ -259,7 +260,9 @@ export default {
 
     // Proxy to the FC API
     api () {
-      return this.$refs.fc.getApi()
+      if (this.$refs[`fc-${this.blockIndex}`]) {
+        return this.$refs[`fc-${this.blockIndex}`].getApi()
+      }
     },
 
     /**
@@ -305,12 +308,14 @@ export default {
 
                 return compose.PageBlockCalendar.RecordFeed(this.$ComposeAPI, module, this.namespace, ff, this.loaded)
                   .then(events => {
+                    events = this.setEventColors(events, ff)
                     this.events.push(...events)
                   })
               })
           case compose.PageBlockCalendar.feedResources.reminder:
             return compose.PageBlockCalendar.ReminderFeed(this.$SystemAPI, this.$auth.user, feed, this.loaded)
               .then(events => {
+                events = this.setEventColors(events, feed)
                 this.events.push(...events)
               })
         }
@@ -338,19 +343,39 @@ export default {
         return
       }
 
-      this.$router.push({ name: 'page.record', params: { recordID, pageID: page.pageID } })
+      const route = { name: 'page.record', params: { recordID, pageID: page.pageID } }
+
+      if (this.options.eventDisplayOption === 'newTab') {
+        window.open(this.$router.resolve(route).href)
+      } else if (this.options.eventDisplayOption === 'modal') {
+        this.$root.$emit('show-record-modal', {
+          recordID,
+          recordPageID: page.pageID,
+        })
+      } else {
+        this.$router.push(route)
+      }
     },
 
     getHeight () {
-      if (this.$refs.cc) {
-        return this.$refs.cc.clientHeight
+      if (this.$refs[`cc-${this.blockIndex}`]) {
+        return this.$refs[`cc-${this.blockIndex}`].clientHeight
       }
       return 'auto'
     },
 
     refresh () {
       this.refreshing = true
-      this.api().refetchEvents()
+      new Promise(resolve => resolve(this.api().refetchEvents()))
+        .then(() => this.key++)
+        .catch(() => this.toastErrorHandler(this.$t('notification:page.block.calendar.eventFetchFailed')))
+    },
+
+    setEventColors (events, feed) {
+      return events.map(event => {
+        event.backgroundColor = feed.options.color
+        return event
+      })
     },
   },
 }
@@ -364,7 +389,7 @@ export default {
 </style>
 <style lang="scss">
 .calendar-container {
-  .fc-content {
+  .fc-content, .event-record {
     cursor: pointer;
   }
 

@@ -17,7 +17,7 @@
       fluid="xl"
       @submit.prevent="handleSave"
     >
-      <b-row no-gutters>
+      <b-row>
         <b-col>
           <b-card
             no-body
@@ -34,169 +34,262 @@
                 class="float-right"
               />
             </b-card-header>
-            <b-container
-              fluid
-              class="px-4 py-3"
-            >
-              <b-row>
-                <b-col
-                  md="6"
-                  sm="12"
+
+            <b-row no-gutters>
+              <b-col
+                md="7"
+                sm="12"
+                class="border-right"
+              >
+                <div
+                  class="pt-3 px-3"
                 >
-                  <div v-if="modules">
-                    <b-form-group
-                      :label="$t('name')"
+                  <h5>
+                    {{ $t('generalSettings') }}
+                  </h5>
+                  <b-row
+                    v-if="modules"
+                  >
+                    <b-col
+                      cols="12"
+                      md="6"
                     >
-                      <b-form-input
-                        v-model="chart.name"
-                        :state="nameState"
-                      />
-                    </b-form-group>
-
-                    <b-form-group
-                      :label="$t('handle')"
-                    >
-                      <b-form-input
-                        v-model="chart.handle"
-                        :placeholder="$t('general.placeholder.handle')"
-                        :state="handleState"
-                        class="mb-1"
-                      />
-                      <b-form-invalid-feedback :state="handleState">
-                        {{ $t('general.placeholder.invalid-handle-characters') }}
-                      </b-form-invalid-feedback>
-                    </b-form-group>
-
-                    <b-form-group
-                      :label="$t('colorScheme.label')"
-                    >
-                      <vue-select
-                        v-model="chart.config.colorScheme"
-                        :options="colorSchemes"
-                        :reduce="cs => cs.value"
-                        label="label"
-                        option-text="label"
-                        option-value="value"
-                        :placeholder="$t('colorScheme.placeholder')"
-                        :clearable="true"
-                        class="bg-white h-100 w-100"
+                      <b-form-group
+                        :label="$t('name')"
+                        class="text-primary"
                       >
-                        <template #option="option">
-                          <p
-                            class="mb-1"
-                          >
-                            {{ option.label }}
-                          </p>
+                        <b-form-input
+                          v-model="chart.name"
+                          :state="nameState"
+                        />
+                      </b-form-group>
+                    </b-col>
+
+                    <b-col
+                      cols="12"
+                      md="6"
+                    >
+                      <b-form-group
+                        :label="$t('handle')"
+                        class="text-primary"
+                      >
+                        <b-form-input
+                          v-model="chart.handle"
+                          :placeholder="$t('general.placeholder.handle')"
+                          :state="handleState"
+                          class="mb-1"
+                        />
+                        <b-form-invalid-feedback :state="handleState">
+                          {{ $t('general.placeholder.invalid-handle-characters') }}
+                        </b-form-invalid-feedback>
+                      </b-form-group>
+                    </b-col>
+
+                    <b-col
+                      cols="12"
+                      md="6"
+                    >
+                      <b-form-group
+                        :label="$t('colorScheme.label')"
+                        label-class="text-primary"
+                      >
+                        <vue-select
+                          v-model="chart.config.colorScheme"
+                          :options="colorSchemes"
+                          :reduce="cs => cs.value"
+                          label="label"
+                          option-text="label"
+                          option-value="value"
+                          :placeholder="$t('colorScheme.placeholder')"
+                          :calculate-position="calculateDropdownPosition"
+                          class="color-selector bg-white"
+                        >
+                          <template #option="option">
+                            <p
+                              class="mb-1"
+                            >
+                              {{ option.label }}
+                            </p>
+                            <div
+                              v-for="(color, index) in option.colors"
+                              :key="`${option.value}-${index}`"
+                              :style="`background: ${color};`"
+                              class="d-inline-block color-box mr-1 mb-1"
+                            />
+                          </template>
+                        </vue-select>
+
+                        <template
+                          v-if="currentColorScheme"
+                        >
                           <div
-                            v-for="(color, index) in option.colors"
-                            :key="`${option.value}-${index}`"
+                            v-for="(color, index) in currentColorScheme.colors"
+                            :key="`${currentColorScheme.value}-${index}`"
                             :style="`background: ${color};`"
-                            class="d-inline-block color-box mr-1 mb-1"
+                            class="d-inline-block color-box mr-1"
                           />
                         </template>
-                      </vue-select>
-                      <template
-                        v-if="currentColorScheme"
+                      </b-form-group>
+                    </b-col>
+
+                    <b-col
+                      cols="12"
+                      md="6"
+                      class="mt-2 mt-md-0"
+                    >
+                      <b-form-group
+                        :label="$t('edit.animation.label')"
+                        class="text-primary"
                       >
-                        <div
-                          v-for="(color, index) in currentColorScheme.colors"
-                          :key="`${currentColorScheme.value}-${index}`"
-                          :style="`background: ${color};`"
-                          class="d-inline-block color-box mr-1"
+                        <c-input-checkbox
+                          v-model="chart.config.noAnimation"
+                          :labels="checkboxLabel"
+                          switch
+                          invert
                         />
-                      </template>
-                    </b-form-group>
-                  </div>
+                      </b-form-group>
+                    </b-col>
+                  </b-row>
+                </div>
+                <hr v-if="modules">
 
-                  <!-- Some charts support multiple reports -->
-                  <fieldset
-                    v-if="supportsMultipleReports"
-                    class="form-group mt-2"
-                  >
-                    <b-form-group class="mb-2">
-                      <h4 class="d-inline-block">
-                        {{ $t('configure.reportsLabel') }}
-                      </h4>
-                      <b-btn
-                        v-if="reportsValid"
-                        class="float-right p-0"
-                        variant="link"
-                        @click="onAddReport"
-                      >
-                        + {{ $t('general.label.add') }}
-                      </b-btn>
-                      <div class="ml-1">
-                        <draggable
-                          v-model="reports"
-                          :options="{ handle:'.handle' }"
-                          class="w-100 d-inline-block"
-                          tag="tbody"
-                        >
-                          <report-item
-                            v-for="(r, i) in reports"
-                            :key="i"
-                            :report="r"
-                            :fixed="reports.length === 1"
-                            @edit="onEditReport(i)"
-                            @remove="onRemoveReport(i)"
-                          >
-                            <template #report-label>
-                              <template v-if="r.moduleID">
-                                {{ moduleName(r.moduleID) }}
-                              </template>
-                              <template v-else>
-                                {{ $t('edit.unconfiguredReport') }}
-                              </template>
-                            </template>
-                          </report-item>
-                        </draggable>
-                      </div>
-                    </b-form-group>
-                  </fieldset>
-
-                  <!-- Generic report editing component -->
-                  <component
-                    :is="reportEditor"
-                    v-if="editReport"
-                    :report.sync="editReport"
-                    :chart="chart"
-                    :modules="modules"
-                    :dimension-field-kind="['Select']"
-                    :supported-metrics="1"
-                  />
-                </b-col>
-
-                <b-col
-                  md="6"
-                  sm="12"
+                <!-- Some charts support multiple reports -->
+                <!-- <fieldset
+                  v-if="supportsMultipleReports"
+                  class="form-group"
                 >
-                  <div
-                    class="d-flex flex-column position-sticky"
-                    style="top: 0;"
-                  >
-                    <b-button
-                      :disabled="processing || !reportsValid"
-                      variant="outline-primary"
-                      @click.prevent="update"
-                    >
-                      {{ $t('edit.loadData') }}
-                    </b-button>
+                  <b-form-group class=" px-3">
+                    <h5 class="d-inline-block">
+                      {{ $t('configure.reportsLabel') }}
+                    </h5>
 
-                    <div
-                      class="chart-preview mt-5"
+                    <b-btn
+                      v-if="reportsValid"
+                      class="float-right p-0"
+                      variant="link"
+                      @click="onAddReport"
                     >
-                      <chart-component
-                        ref="chart"
-                        :chart="chart"
-                        :reporter="reporter"
-                        style="min-height: 400px;"
-                        @updated="onUpdated"
-                      />
+                      + {{ $t('general.label.add') }}
+                    </b-btn>
+
+                    <div>
+                      <draggable
+                        v-model="reports"
+                        handle=".handle"
+                        tag="tbody"
+                        class="w-100 d-inline-block"
+                      >
+                        <report-item
+                          v-for="(r, i) in reports"
+                          :key="i"
+                          :report="r"
+                          :fixed="reports.length === 1"
+                          @edit="onEditReport(i)"
+                          @remove="onRemoveReport(i)"
+                        >
+                          <template #report-label>
+                            <template v-if="r.moduleID">
+                              {{ moduleName(r.moduleID) }}
+                            </template>
+
+                            <template v-else>
+                              {{ $t('edit.unconfiguredReport') }}
+                            </template>
+                          </template>
+                        </report-item>
+                      </draggable>
                     </div>
-                  </div>
-                </b-col>
-              </b-row>
-            </b-container>
+                  </b-form-group>
+                </fieldset> -->
+
+                <!-- General report editing component -->
+                <component
+                  :is="reportEditor"
+                  v-if="chart && editReport"
+                  :report.sync="editReport"
+                  :chart="chart"
+                  :modules="modules"
+                  :supported-metrics="1"
+                />
+
+                <hr>
+
+                <div
+                  class="px-3"
+                >
+                  <h5 class="mb-3">
+                    {{ $t('edit.toolbox.label') }}
+                  </h5>
+
+                  <b-row>
+                    <b-col
+                      cols="12"
+                      md="6"
+                    >
+                      <b-form-group
+                        :label="$t('edit.toolbox.saveAsImage.label')"
+                        label-class="text-primary"
+                      >
+                        <c-input-checkbox
+                          :value="!!chart.config.toolbox.saveAsImage"
+                          switch
+                          :labels="checkboxLabel"
+                          @input="$set(chart.config.toolbox, 'saveAsImage', $event)"
+                        />
+                      </b-form-group>
+                    </b-col>
+
+                    <b-col
+                      v-if="hasAxis"
+                      cols="12"
+                      md="6"
+                    >
+                      <b-form-group
+                        :label="$t('edit.toolbox.timeline.label')"
+                        label-class="text-primary"
+                      >
+                        <b-form-radio-group
+                          v-model="chart.config.toolbox.timeline"
+                          buttons
+                          button-variant="outline-secondary"
+                          size="sm"
+                          :options="timelineOptions"
+                        />
+                      </b-form-group>
+                    </b-col>
+                  </b-row>
+                </div>
+              </b-col>
+
+              <b-col
+                md="5"
+                sm="12"
+              >
+                <div
+                  class="d-flex flex-column position-sticky"
+                  style="top: 0;"
+                >
+                  <b-button
+                    :title="$t('edit.loadData')"
+                    :disabled="processing || !reportsValid"
+                    variant="outline-light"
+                    size="lg"
+                    class="d-flex align-items-center text-primary ml-auto border-0 px-2 mt-2 mr-2"
+                    @click.prevent="update"
+                  >
+                    <font-awesome-icon :icon="['fa', 'sync']" />
+                  </b-button>
+
+                  <chart-component
+                    ref="chart"
+                    :chart="chart"
+                    :reporter="reporter"
+                    style="min-height: 400px;"
+                    @updated="onUpdated"
+                  />
+                </div>
+              </b-col>
+            </b-row>
           </b-card>
         </b-col>
       </b-row>
@@ -210,7 +303,7 @@
         :hide-save="hideSave"
         hide-clone
         :disable-save="disableSave"
-        @delete="handleDelete"
+        @delete="handleDelete()"
         @save="handleSave()"
         @saveAndClose="handleSave({ closeOnSuccess: true })"
       />
@@ -223,7 +316,7 @@ import EditorToolbar from 'corteza-webapp-compose/src/components/Admin/EditorToo
 import { compose, NoID, shared } from '@cortezaproject/corteza-js'
 import Export from 'corteza-webapp-compose/src/components/Admin/Export'
 import ChartComponent from 'corteza-webapp-compose/src/components/Chart'
-import { handle } from '@cortezaproject/corteza-vue'
+import { handle, components } from '@cortezaproject/corteza-vue'
 import draggable from 'vuedraggable'
 import ReportItem from 'corteza-webapp-compose/src/components/Chart/ReportItem'
 import Reports from 'corteza-webapp-compose/src/components/Chart/Report'
@@ -231,6 +324,7 @@ import { chartConstructor } from 'corteza-webapp-compose/src/lib/charts'
 import VueSelect from 'vue-select'
 import { evaluatePrefilter } from 'corteza-webapp-compose/src/lib/record-filter'
 import { debounce } from 'lodash'
+const { CInputCheckbox } = components
 const { colorschemes } = shared
 
 const defaultReport = {
@@ -251,6 +345,7 @@ export default {
     draggable,
     ReportItem,
     VueSelect,
+    CInputCheckbox,
   },
 
   props: {
@@ -278,6 +373,10 @@ export default {
       processing: false,
 
       editReportIndex: undefined,
+      checkboxLabel: {
+        on: this.$t('general:label.yes'),
+        off: this.$t('general:label.no'),
+      },
     }
   },
 
@@ -355,10 +454,12 @@ export default {
 
       if (this.chart instanceof compose.FunnelChart) {
         return Reports.FunnelChart
-      }
-      if (this.chart instanceof compose.GaugeChart) {
+      } else if (this.chart instanceof compose.GaugeChart) {
         return Reports.GaugeChart
+      } else if (this.chart instanceof compose.RadarChart) {
+        return Reports.RadarChart
       }
+
       return Reports.GenericChart
     },
 
@@ -398,6 +499,19 @@ export default {
     isEdit () {
       return this.chart && this.chart.chartID !== NoID
     },
+
+    hasAxis () {
+      return this.reports.some(({ metrics = [] }) => metrics.some(m => ['bar', 'line', 'scatter'].includes(m.type)))
+    },
+
+    timelineOptions () {
+      return [
+        { value: '', text: this.$t('edit.toolbox.timeline.options.none') },
+        { value: 'x', text: this.$t('edit.toolbox.timeline.options.x') },
+        { value: 'y', text: this.$t('edit.toolbox.timeline.options.y') },
+        { value: 'xy', text: this.$t('edit.toolbox.timeline.options.xy') },
+      ]
+    },
   },
 
   watch: {
@@ -416,6 +530,10 @@ export default {
 
             case 'funnel':
               c = new compose.FunnelChart(c)
+              break
+
+            case 'radar':
+              c = new compose.RadarChart(c)
               break
           }
           this.chart = c
@@ -532,16 +650,45 @@ export default {
     onAddReport () {
       this.reports.push(this.chart.defReport())
     },
+
+    getOptionKey ({ value }) {
+      return value
+    },
   },
 }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
+
 .chart-preview {
-  max-height: 50vh;
+  max-height: 50%;
 }
 
 .color-box {
-  width: 28px;
-  height: 12px;
+  width: 18px;
+  height: 8px;
+}
+
+.color-selector {
+
+  .vs__dropdown-menu {
+    min-width: 100%;
+  }
+
+  .vs__dropdown-option {
+    text-overflow: ellipsis;
+    overflow-x: hidden;
+  }
+  .vs__selected-options {
+    width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .vs__selected {
+    max-width: 230px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 </style>

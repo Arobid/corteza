@@ -13,12 +13,14 @@
       <vue-select
         v-model="f.options.roles"
         :options="roleOptions"
+        :get-option-key="getOptionKey"
         :reduce="role => role.roleID"
         option-value="roleID"
         option-text="name"
         :close-on-select="false"
         append-to-body
         :placeholder="$t('kind.user.roles.placeholder')"
+        :calculate-position="calculateDropdownPosition"
         multiple
         label="name"
         class="bg-white"
@@ -33,7 +35,17 @@
         v-model="f.options.selectType"
         :options="selectOptions"
         stacked
+        @change="onUpdateIsUniqueMultiValue"
       />
+      <b-form-checkbox
+        v-if="f.options.selectType !== 'multiple'"
+        v-model="f.options.isUniqueMultiValue"
+        :value="false"
+        :unchecked-value="true"
+        class="mt-2"
+      >
+        {{ $t('kind.select.allow-duplicates') }}
+      </b-form-checkbox>
     </b-form-group>
   </div>
 </template>
@@ -68,6 +80,18 @@ export default {
     this.$SystemAPI.roleList().then(({ set: roles = [] }) => {
       this.roleOptions = roles
     })
+  },
+
+  methods: {
+    getOptionKey ({ roleID }) {
+      return roleID
+    },
+
+    onUpdateIsUniqueMultiValue () {
+      if (this.f.options.selectType === 'multiple') {
+        this.f.options.isUniqueMultiValue = true
+      }
+    },
   },
 }
 </script>

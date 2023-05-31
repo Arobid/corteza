@@ -3,6 +3,8 @@
     no-body
     class="shadow-sm"
     header-bg-variant="white"
+    footer-bg-variant="white"
+    footer-class="border-top"
   >
     <template #header>
       <b-container
@@ -49,18 +51,19 @@
         id="resource-list"
         ref="resourceList"
         head-variant="light"
+        :fields="_fields"
+        :items="_items"
+        :sort-by.sync="sorting.sortBy"
+        :sort-desc.sync="sorting.sortDesc"
+        :sticky-header="stickyHeader"
+        :tbody-tr-class="tableRowClasses"
         hover
         responsive
         show-empty
         no-sort-reset
         no-local-sorting
         :primary-key="primaryKey"
-        :sort-by.sync="sorting.sortBy"
-        :sort-desc.sync="sorting.sortDesc"
-        :items="_items"
-        :fields="_fields"
-        :tbody-tr-class="tableRowClasses"
-        class="mb-0"
+        class="mh-100 h-100 mb-0"
         @sort-changed="pagination.page = 1"
         @row-clicked="$emit('row-clicked', $event)"
       >
@@ -119,7 +122,10 @@
       </b-table>
     </b-card-body>
 
-    <template #footer>
+    <template
+      v-if="showFooter"
+      #footer
+    >
       <div
         class="d-flex align-items-center justify-content-between"
       >
@@ -128,7 +134,7 @@
         >
           <div
             v-if="!hideTotal"
-            class="text-nowrap font-weight-bold"
+            class="text-nowrap"
           >
             {{ getPagination }}
           </div>
@@ -139,29 +145,35 @@
         >
           <b-button
             :disabled="!hasPrevPage"
-            variant="link"
-            class="text-dark"
+            variant="outline-light"
+            class="d-flex align-items-center justify-content-center text-primary border-0"
             @click="goToPage()"
           >
             <font-awesome-icon :icon="['fas', 'angle-double-left']" />
           </b-button>
           <b-button
             :disabled="!hasPrevPage"
-            variant="link"
-            class="text-dark"
+            variant="outline-light"
+            class="d-flex align-items-center justify-content-center text-primary border-0"
             @click="goToPage('prevPage')"
           >
-            <font-awesome-icon :icon="['fas', 'angle-left']" />
+            <font-awesome-icon
+              :icon="['fas', 'angle-left']"
+              class="mr-1"
+            />
             {{ translations.prevPagination }}
           </b-button>
           <b-button
             :disabled="!hasNextPage"
-            variant="link"
-            class="text-dark"
+            variant="outline-light"
+            class="d-flex align-items-center justify-content-center text-primary border-0"
             @click="goToPage('nextPage')"
           >
             {{ translations.nextPagination }}
-            <font-awesome-icon :icon="['fas', 'angle-right']" />
+            <font-awesome-icon
+              :icon="['fas', 'angle-right']"
+              class="ml-1"
+            />
           </b-button>
         </b-button-group>
       </div>
@@ -219,6 +231,10 @@ export default {
     },
 
     hidePagination: {
+      type: Boolean,
+    },
+
+    stickyHeader: {
       type: Boolean,
     },
 
@@ -295,12 +311,14 @@ export default {
     },
 
     getPagination () {
-      const { total = 0, limit = 10, page = 1 } = this.pagination
+      let { total = 0, limit = 10, page = 1 } = this.pagination
+      total = isNaN(total) ? 0 : total
 
       const pagination = {
         from: ((page - 1) * limit) + 1,
         to: limit > 0 ? Math.min((page * limit), total) : total,
         count: total,
+        data: total == 1 ? this.translations.resourceSingle : this.translations.resourcePlural
       }
 
       return this.$t(this.translations[total > limit ? 'showingPagination' : 'singlePluralPagination'], pagination)
@@ -313,6 +331,10 @@ export default {
     hasNextPage () {
       return !!this.pagination.nextPage
     },
+
+    showFooter () {
+      return !(this.hideTotal && this.hidePagination)
+    }
   },
 
   methods: {

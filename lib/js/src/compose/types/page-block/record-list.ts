@@ -5,6 +5,13 @@ import { Module } from '../module'
 import { Button } from './types'
 
 const kind = 'RecordList'
+
+interface FilterPreset {
+  name: string;
+  filter: unknown[];
+  roles: string[];
+}
+
 interface Options {
   moduleID: string;
   prefilter: string;
@@ -13,22 +20,28 @@ interface Options {
   hideHeader: boolean;
   hideAddButton: boolean;
   hideImportButton: boolean;
+  hideConfigureFieldsButton: boolean;
   hideSearch: boolean;
   hidePaging: boolean;
   hideSorting: boolean;
+  hideFiltering: boolean;
   hideRecordReminderButton: boolean;
   hideRecordCloneButton: boolean;
   hideRecordEditButton: boolean;
   hideRecordViewButton: boolean;
   hideRecordPermissionsButton: boolean;
+  enableRecordPageNavigation: boolean;
   allowExport: boolean;
   perPage: number;
   recordDisplayOption: string;
+  recordSelectorDisplayOption: string;
   magnifyOption: string;
 
   fullPageNavigation: boolean;
   showTotalCount: boolean;
+  showDeletedRecordsOption: boolean;
   refreshRate: number;
+  showRefresh: boolean;
 
   // Record-lines
   editable: boolean;
@@ -50,6 +63,10 @@ interface Options {
 
   // Ordered list of buttons to display in the block
   selectionButtons: Array<Button>;
+
+  bulkRecordEditEnabled: boolean;
+  inlineRecordEditEnabled: boolean;
+  filterPresets: FilterPreset[];
 }
 
 const defaults: Readonly<Options> = Object.freeze({
@@ -60,21 +77,26 @@ const defaults: Readonly<Options> = Object.freeze({
   hideHeader: false,
   hideAddButton: false,
   hideImportButton: false,
+  hideConfigureFieldsButton: true,
   hideSearch: false,
   hidePaging: false,
   hideSorting: false,
-  hideRecordReminderButton: true,
-  hideRecordCloneButton: true,
+  hideFiltering: false,
+  hideRecordReminderButton: false,
+  hideRecordCloneButton: false,
   hideRecordEditButton: false,
-  hideRecordViewButton: true,
-  hideRecordPermissionsButton: true,
+  hideRecordViewButton: false,
+  hideRecordPermissionsButton: false,
+  enableRecordPageNavigation: false,
   allowExport: false,
   perPage: 20,
   recordDisplayOption: 'sameTab',
+  recordSelectorDisplayOption: 'sameTab',
   magnifyOption: '',
 
-  fullPageNavigation: true,
-  showTotalCount: true,
+  fullPageNavigation: false,
+  showTotalCount: false,
+  showDeletedRecordsOption: false,
 
   editable: false,
   draggable: false,
@@ -91,6 +113,11 @@ const defaults: Readonly<Options> = Object.freeze({
 
   selectionButtons: [],
   refreshRate: 0,
+  showRefresh: false,
+
+  bulkRecordEditEnabled: true,
+  inlineRecordEditEnabled: false,
+  filterPresets: []
 })
 
 export class PageBlockRecordList extends PageBlock {
@@ -107,11 +134,15 @@ export class PageBlockRecordList extends PageBlock {
     if (!o) return
 
     Apply(this.options, o, CortezaID, 'moduleID')
-    Apply(this.options, o, String, 'prefilter', 'presort', 'selectMode', 'positionField', 'refField', 'recordDisplayOption', 'magnifyOption')
+    Apply(this.options, o, String, 'prefilter', 'presort', 'selectMode', 'positionField', 'refField', 'recordDisplayOption', 'magnifyOption', 'recordSelectorDisplayOption')
     Apply(this.options, o, Number, 'perPage', 'refreshRate')
 
     if (o.fields) {
       this.options.fields = o.fields
+    }
+
+    if (o.filterPresets) {
+      this.options.filterPresets = o.filterPresets
     }
 
     if (o.editFields) {
@@ -126,10 +157,13 @@ export class PageBlockRecordList extends PageBlock {
       'hideHeader',
       'hideAddButton',
       'hideImportButton',
+      'hideConfigureFieldsButton',
       'hideSearch',
       'hidePaging',
+      'hideFiltering',
       'fullPageNavigation',
       'showTotalCount',
+      'showDeletedRecordsOption',
       'hideSorting',
       'allowExport',
       'selectable',
@@ -138,9 +172,13 @@ export class PageBlockRecordList extends PageBlock {
       'hideRecordEditButton',
       'hideRecordViewButton',
       'hideRecordPermissionsButton',
+      'enableRecordPageNavigation',
       'editable',
       'draggable',
       'linkToParent',
+      'showRefresh',
+      'bulkRecordEditEnabled',
+      'inlineRecordEditEnabled'
     )
 
     if (o.selectionButtons) {

@@ -230,6 +230,67 @@ type (
 		*pageBase
 	}
 
+	// pageLayoutBase
+	//
+	// This type is auto-generated.
+	pageLayoutBase struct {
+		immutable     bool
+		pageLayout    *types.PageLayout
+		oldPageLayout *types.PageLayout
+		namespace     *types.Namespace
+		selected      []interface{}
+		invoker       auth.Identifiable
+	}
+
+	// pageLayoutOnManual
+	//
+	// This type is auto-generated.
+	pageLayoutOnManual struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutBeforeCreate
+	//
+	// This type is auto-generated.
+	pageLayoutBeforeCreate struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutBeforeUpdate
+	//
+	// This type is auto-generated.
+	pageLayoutBeforeUpdate struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutBeforeDelete
+	//
+	// This type is auto-generated.
+	pageLayoutBeforeDelete struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutAfterCreate
+	//
+	// This type is auto-generated.
+	pageLayoutAfterCreate struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutAfterUpdate
+	//
+	// This type is auto-generated.
+	pageLayoutAfterUpdate struct {
+		*pageLayoutBase
+	}
+
+	// pageLayoutAfterDelete
+	//
+	// This type is auto-generated.
+	pageLayoutAfterDelete struct {
+		*pageLayoutBase
+	}
+
 	// recordBase
 	//
 	// This type is auto-generated.
@@ -279,6 +340,13 @@ type (
 		*recordBase
 	}
 
+	// recordBeforeUndelete
+	//
+	// This type is auto-generated.
+	recordBeforeUndelete struct {
+		*recordBase
+	}
+
 	// recordAfterCreate
 	//
 	// This type is auto-generated.
@@ -297,6 +365,13 @@ type (
 	//
 	// This type is auto-generated.
 	recordAfterDelete struct {
+		*recordBase
+	}
+
+	// recordAfterUndelete
+	//
+	// This type is auto-generated.
+	recordAfterUndelete struct {
 		*recordBase
 	}
 )
@@ -1874,6 +1949,509 @@ func (res *pageBase) DecodeVars(vars *expr.Vars) (err error) {
 	return
 }
 
+// ResourceType returns "compose:page-layout"
+//
+// This function is auto-generated.
+func (pageLayoutBase) ResourceType() string {
+	return "compose:page-layout"
+}
+
+// EventType on pageLayoutOnManual returns "onManual"
+//
+// This function is auto-generated.
+func (pageLayoutOnManual) EventType() string {
+	return "onManual"
+}
+
+// EventType on pageLayoutBeforeCreate returns "beforeCreate"
+//
+// This function is auto-generated.
+func (pageLayoutBeforeCreate) EventType() string {
+	return "beforeCreate"
+}
+
+// EventType on pageLayoutBeforeUpdate returns "beforeUpdate"
+//
+// This function is auto-generated.
+func (pageLayoutBeforeUpdate) EventType() string {
+	return "beforeUpdate"
+}
+
+// EventType on pageLayoutBeforeDelete returns "beforeDelete"
+//
+// This function is auto-generated.
+func (pageLayoutBeforeDelete) EventType() string {
+	return "beforeDelete"
+}
+
+// EventType on pageLayoutAfterCreate returns "afterCreate"
+//
+// This function is auto-generated.
+func (pageLayoutAfterCreate) EventType() string {
+	return "afterCreate"
+}
+
+// EventType on pageLayoutAfterUpdate returns "afterUpdate"
+//
+// This function is auto-generated.
+func (pageLayoutAfterUpdate) EventType() string {
+	return "afterUpdate"
+}
+
+// EventType on pageLayoutAfterDelete returns "afterDelete"
+//
+// This function is auto-generated.
+func (pageLayoutAfterDelete) EventType() string {
+	return "afterDelete"
+}
+
+// PageLayoutOnManual creates onManual for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutOnManual(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutOnManual {
+	return &pageLayoutOnManual{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutOnManualImmutable creates onManual for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutOnManualImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutOnManual {
+	return &pageLayoutOnManual{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeCreate creates beforeCreate for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutBeforeCreate(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeCreate {
+	return &pageLayoutBeforeCreate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeCreateImmutable creates beforeCreate for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutBeforeCreateImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeCreate {
+	return &pageLayoutBeforeCreate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeUpdate creates beforeUpdate for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutBeforeUpdate(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeUpdate {
+	return &pageLayoutBeforeUpdate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeUpdateImmutable creates beforeUpdate for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutBeforeUpdateImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeUpdate {
+	return &pageLayoutBeforeUpdate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeDelete creates beforeDelete for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutBeforeDelete(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeDelete {
+	return &pageLayoutBeforeDelete{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutBeforeDeleteImmutable creates beforeDelete for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutBeforeDeleteImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutBeforeDelete {
+	return &pageLayoutBeforeDelete{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterCreate creates afterCreate for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutAfterCreate(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterCreate {
+	return &pageLayoutAfterCreate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterCreateImmutable creates afterCreate for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutAfterCreateImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterCreate {
+	return &pageLayoutAfterCreate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterUpdate creates afterUpdate for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutAfterUpdate(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterUpdate {
+	return &pageLayoutAfterUpdate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterUpdateImmutable creates afterUpdate for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutAfterUpdateImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterUpdate {
+	return &pageLayoutAfterUpdate{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterDelete creates afterDelete for compose:page-layout resource
+//
+// This function is auto-generated.
+func PageLayoutAfterDelete(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterDelete {
+	return &pageLayoutAfterDelete{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     false,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// PageLayoutAfterDeleteImmutable creates afterDelete for compose:page-layout resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func PageLayoutAfterDeleteImmutable(
+	argPageLayout *types.PageLayout,
+	argOldPageLayout *types.PageLayout,
+	argNamespace *types.Namespace,
+	argSelected []interface{},
+) *pageLayoutAfterDelete {
+	return &pageLayoutAfterDelete{
+		pageLayoutBase: &pageLayoutBase{
+			immutable:     true,
+			pageLayout:    argPageLayout,
+			oldPageLayout: argOldPageLayout,
+			namespace:     argNamespace,
+			selected:      argSelected,
+		},
+	}
+}
+
+// SetPageLayout sets new pageLayout value
+//
+// This function is auto-generated.
+func (res *pageLayoutBase) SetPageLayout(argPageLayout *types.PageLayout) {
+	res.pageLayout = argPageLayout
+}
+
+// PageLayout returns pageLayout
+//
+// This function is auto-generated.
+func (res pageLayoutBase) PageLayout() *types.PageLayout {
+	return res.pageLayout
+}
+
+// OldPageLayout returns oldPageLayout
+//
+// This function is auto-generated.
+func (res pageLayoutBase) OldPageLayout() *types.PageLayout {
+	return res.oldPageLayout
+}
+
+// Namespace returns namespace
+//
+// This function is auto-generated.
+func (res pageLayoutBase) Namespace() *types.Namespace {
+	return res.namespace
+}
+
+// Selected returns selected
+//
+// This function is auto-generated.
+func (res pageLayoutBase) Selected() []interface{} {
+	return res.selected
+}
+
+// SetInvoker sets new invoker value
+//
+// This function is auto-generated.
+func (res *pageLayoutBase) SetInvoker(argInvoker auth.Identifiable) {
+	res.invoker = argInvoker
+}
+
+// Invoker returns invoker
+//
+// This function is auto-generated.
+func (res pageLayoutBase) Invoker() auth.Identifiable {
+	return res.invoker
+}
+
+// Encode internal data to be passed as event params & arguments to triggered Corredor script
+func (res pageLayoutBase) Encode() (args map[string][]byte, err error) {
+	args = make(map[string][]byte)
+
+	if args["pageLayout"], err = json.Marshal(res.pageLayout); err != nil {
+		return nil, err
+	}
+
+	if args["oldPageLayout"], err = json.Marshal(res.oldPageLayout); err != nil {
+		return nil, err
+	}
+
+	if args["namespace"], err = json.Marshal(res.namespace); err != nil {
+		return nil, err
+	}
+
+	if args["selected"], err = json.Marshal(res.selected); err != nil {
+		return nil, err
+	}
+
+	if args["invoker"], err = json.Marshal(res.invoker); err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+// Encode internal data to be passed as event params & arguments to workflow
+func (res pageLayoutBase) EncodeVars() (out *expr.Vars, err error) {
+	out = &expr.Vars{}
+	var v expr.TypedValue
+
+	// Could not found expression-type counterpart for *types.PageLayout
+
+	// Could not found expression-type counterpart for *types.PageLayout
+
+	if v, err = automation.NewComposeNamespace(res.namespace); err == nil {
+		err = out.Set("namespace", v)
+	}
+
+	if err != nil {
+		return
+	}
+
+	// Could not found expression-type counterpart for []interface{}
+
+	// Could not found expression-type counterpart for auth.Identifiable
+
+	_ = v
+	return
+}
+
+// Decode return values from Corredor script into struct props
+func (res *pageLayoutBase) Decode(results map[string][]byte) (err error) {
+	if res.immutable {
+		// Respect immutability
+		return
+	}
+	if res.pageLayout != nil {
+		if r, ok := results["result"]; ok && len(results) == 1 {
+			if err = json.Unmarshal(r, res.pageLayout); err != nil {
+				return
+			}
+		}
+	}
+
+	if res.pageLayout != nil {
+		if r, ok := results["pageLayout"]; ok {
+			if err = json.Unmarshal(r, res.pageLayout); err != nil {
+				return
+			}
+		}
+	}
+
+	// Do not decode oldPageLayout; marked as immutable
+
+	// Do not decode namespace; marked as immutable
+
+	// Do not decode selected; marked as immutable
+
+	if res.invoker != nil {
+		if r, ok := results["invoker"]; ok {
+			if err = json.Unmarshal(r, res.invoker); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+func (res *pageLayoutBase) DecodeVars(vars *expr.Vars) (err error) {
+	if res.immutable {
+		// Respect immutability
+		return
+	}
+	// Could not find expression-type counterpart for *types.PageLayout
+	// oldPageLayout marked as immutable
+	// namespace marked as immutable
+	// selected marked as immutable
+	// Could not find expression-type counterpart for auth.Identifiable
+
+	return
+}
+
 // ResourceType returns "compose:record"
 //
 // This function is auto-generated.
@@ -1916,6 +2494,13 @@ func (recordBeforeDelete) EventType() string {
 	return "beforeDelete"
 }
 
+// EventType on recordBeforeUndelete returns "beforeUndelete"
+//
+// This function is auto-generated.
+func (recordBeforeUndelete) EventType() string {
+	return "beforeUndelete"
+}
+
 // EventType on recordAfterCreate returns "afterCreate"
 //
 // This function is auto-generated.
@@ -1935,6 +2520,13 @@ func (recordAfterUpdate) EventType() string {
 // This function is auto-generated.
 func (recordAfterDelete) EventType() string {
 	return "afterDelete"
+}
+
+// EventType on recordAfterUndelete returns "afterUndelete"
+//
+// This function is auto-generated.
+func (recordAfterUndelete) EventType() string {
+	return "afterUndelete"
 }
 
 // RecordOnManual creates onManual for compose:record resource
@@ -2187,6 +2779,56 @@ func RecordBeforeDeleteImmutable(
 	}
 }
 
+// RecordBeforeUndelete creates beforeUndelete for compose:record resource
+//
+// This function is auto-generated.
+func RecordBeforeUndelete(
+	argRecord *types.Record,
+	argOldRecord *types.Record,
+	argModule *types.Module,
+	argNamespace *types.Namespace,
+	argRecordValueErrors *types.RecordValueErrorSet,
+	argSelected []interface{},
+) *recordBeforeUndelete {
+	return &recordBeforeUndelete{
+		recordBase: &recordBase{
+			immutable:         false,
+			record:            argRecord,
+			oldRecord:         argOldRecord,
+			module:            argModule,
+			namespace:         argNamespace,
+			recordValueErrors: argRecordValueErrors,
+			selected:          argSelected,
+		},
+	}
+}
+
+// RecordBeforeUndeleteImmutable creates beforeUndelete for compose:record resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func RecordBeforeUndeleteImmutable(
+	argRecord *types.Record,
+	argOldRecord *types.Record,
+	argModule *types.Module,
+	argNamespace *types.Namespace,
+	argRecordValueErrors *types.RecordValueErrorSet,
+	argSelected []interface{},
+) *recordBeforeUndelete {
+	return &recordBeforeUndelete{
+		recordBase: &recordBase{
+			immutable:         true,
+			record:            argRecord,
+			oldRecord:         argOldRecord,
+			module:            argModule,
+			namespace:         argNamespace,
+			recordValueErrors: argRecordValueErrors,
+			selected:          argSelected,
+		},
+	}
+}
+
 // RecordAfterCreate creates afterCreate for compose:record resource
 //
 // This function is auto-generated.
@@ -2325,6 +2967,56 @@ func RecordAfterDeleteImmutable(
 	argSelected []interface{},
 ) *recordAfterDelete {
 	return &recordAfterDelete{
+		recordBase: &recordBase{
+			immutable:         true,
+			record:            argRecord,
+			oldRecord:         argOldRecord,
+			module:            argModule,
+			namespace:         argNamespace,
+			recordValueErrors: argRecordValueErrors,
+			selected:          argSelected,
+		},
+	}
+}
+
+// RecordAfterUndelete creates afterUndelete for compose:record resource
+//
+// This function is auto-generated.
+func RecordAfterUndelete(
+	argRecord *types.Record,
+	argOldRecord *types.Record,
+	argModule *types.Module,
+	argNamespace *types.Namespace,
+	argRecordValueErrors *types.RecordValueErrorSet,
+	argSelected []interface{},
+) *recordAfterUndelete {
+	return &recordAfterUndelete{
+		recordBase: &recordBase{
+			immutable:         false,
+			record:            argRecord,
+			oldRecord:         argOldRecord,
+			module:            argModule,
+			namespace:         argNamespace,
+			recordValueErrors: argRecordValueErrors,
+			selected:          argSelected,
+		},
+	}
+}
+
+// RecordAfterUndeleteImmutable creates afterUndelete for compose:record resource
+//
+// None of the arguments will be mutable!
+//
+// This function is auto-generated.
+func RecordAfterUndeleteImmutable(
+	argRecord *types.Record,
+	argOldRecord *types.Record,
+	argModule *types.Module,
+	argNamespace *types.Namespace,
+	argRecordValueErrors *types.RecordValueErrorSet,
+	argSelected []interface{},
+) *recordAfterUndelete {
+	return &recordAfterUndelete{
 		recordBase: &recordBase{
 			immutable:         true,
 			record:            argRecord,
